@@ -10,7 +10,7 @@ Dieses Projekt ist ein leidenschaftliches Hobby-Projekt mit einem klaren Fokus: 
 
 Der Stack wurde gewählt, um eine nahtlose C#-Experience vom Frontend bis zur Datenbank-Interaktion zu ermöglichen:
 
-- **Frontend:** [Blazor WebAssembly](https://dotnet.microsoft.com/apps/aspnet/web-apps/blazor) (.NET 8/9)
+- **Frontend:** [Blazor WebAssembly](https://dotnet.microsoft.com/apps/aspnet/web-apps/blazor) (.NET 10)
 - **Backend-as-a-Service:** [Supabase](https://supabase.com/)
   - **PostgreSQL:** Relationale Datenhaltung mit komplexen Schemata.
   - **Supabase Auth:** Sicherer Login & Rollenmanagement (GoTrue).
