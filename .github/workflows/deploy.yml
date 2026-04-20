@@ -1,0 +1,57 @@
+name: Deploy Blazor WASM to GitHub Pages
+
+on:
+  push:
+    branches:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Inject secrets in appsettings.json
+      run: |
+          jq '.Supabase.Url = "${{ secrets.SUPABASE_URL }}" | 
+              .Supabase.AnonKey = "${{ secrets.SUPABASE_KEY }}"' \
+          wwwroot/appsettings.json > tmp.json && mv tmp.json wwwroot/appsettings.json
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: 10.0.x
+
+    - name: Publish
+      run: dotnet publish -c Release -o release
+
+    - name: Update base href
+      run: sed -i 's/<base href="\/" \/>/<base href="\/Syncro\/" \/>/' release/wwwroot/index.html
+
+    - name: Copy index.html to 404.html
+      run: cp release/wwwroot/index.html release/wwwroot/404.html
+
+    - name: Upload artifact
+      uses: actions/upload-pages-artifact@v4
+      with:
+        path: release/wwwroot
+
+  deploy:
+    needs: build-deploy
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write      # für Pages-Deploy
+      id-token: write   # für OIDC
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+    - name: Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v4
