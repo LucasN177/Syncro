@@ -49,21 +49,4 @@ Das Projekt folgt einem modularen Entwicklungsplan:
 - [ ] Dark Mode Support & UI-Feinschliff.
 - [ ] Push-Benachrichtigungen bei Erwähnungen oder Deadlines.
 
----
 
-## 🧠 Philosophie: "Minimum AI - Maximum Learning"
-
-Dieses Projekt verfolgt einen bewussten Ansatz:
-- **Kein Copy-Paste von KI-Generaten:** Der Code wird manuell geschrieben, um die Logik hinter Blazor und Supabase vollständig zu durchdringen.
-- **Lernkurve vor Geschwindigkeit:** Ziel ist nicht das schnellste Release, sondern die sauberste Architektur.
-- **Transparenz:** Jeder Commit spiegelt echte Eigenleistung wider.
-
----
-
-## 🚀 Installation & Entwicklung
-
-Um das Projekt lokal zu starten:
-
-1. **Repository klonen:**
-   ```bash
-   git clone [https://github.com/dein-benutzername/syncro.git](https://github.com/dein-benutzername/syncro.git)
