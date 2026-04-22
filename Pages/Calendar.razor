@@ -1,4 +1,8 @@
 @page "/calendar"
+@using Syncro.Core.Models
+@using Syncro.Layout.Helper
+@using Syncro.Layout.UI_Models
+@inject IDialogService DialogService
 
 <MudContainer MaxWidth="MaxWidth.False" Class="pa-6" Style="min-height: 100vh; background: #F8FAFC;">
     
@@ -71,14 +75,14 @@
             </MudGrid>
             
             @{
-                var weeks = GetCalendarWeeks();
+                var weeks = CalendarHelper.GetCalendarWeeks();
             }
             @foreach (var week in weeks)
             {
                 <MudGrid Spacing="0" Style="border-bottom: 1px solid var(--mud-palette-divider);">
                     @foreach (var day in week)
                     {
-                        var dayEvents = GetEventsForDay(day);
+                        var dayEvents = CalendarHelper.GetEventsForDay(day, _events);
                         var isToday = day.Date == DateTime.Today;
                         var isCurrentMonth = day.Month == _currentMonth.Month;
                         var isSelected = _selectedDay.HasValue && _selectedDay.Value.Date == day.Date;
@@ -137,7 +141,7 @@
     
     @if (_activeView == "Week")
     {
-        var weekDays = GetCurrentWeekDays();
+        var weekDays = CalendarHelper.GetCurrentWeekDays(_selectedDay);
 
         <MudPaper Elevation="0" Style="border-radius: 16px; border: 1px solid var(--mud-palette-divider); overflow: hidden; background: #fff;">
             
@@ -298,246 +302,3 @@
     }
 
 </MudContainer>
-
-<MudDialog @bind-IsVisible="_detailOpen" Options="@(new DialogOptions { MaxWidth = MaxWidth.ExtraSmall, FullWidth = true, CloseButton = true })">
-    <TitleContent>
-        @if (_selectedEvent != null)
-        {
-            var cat = _categories.FirstOrDefault(c => c.Name == _selectedEvent.Category);
-            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
-                <MudIcon Icon="@Icons.Material.Filled.Circle" Style="@($"color: {cat?.Hex}; font-size: 14px;")" />
-                <MudText Typo="Typo.h6" Style="font-weight: 700;">@_selectedEvent.Title</MudText>
-            </MudStack>
-        }
-    </TitleContent>
-    <DialogContent>
-        @if (_selectedEvent != null)
-        {
-            <MudStack Spacing="3">
-                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
-                    <MudIcon Icon="@Icons.Material.Outlined.Schedule" Color="Color.Secondary" Size="Size.Small" />
-                    <MudText Typo="Typo.body2">
-                        @_selectedEvent.Start.ToString("dddd, MMMM d · HH:mm") – @_selectedEvent.End.ToString("HH:mm")
-                    </MudText>
-                </MudStack>
-                @if (!string.IsNullOrEmpty(_selectedEvent.Location))
-                {
-                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
-                        <MudIcon Icon="@Icons.Material.Outlined.LocationOn" Color="Color.Secondary" Size="Size.Small" />
-                        <MudText Typo="Typo.body2">@_selectedEvent.Location</MudText>
-                    </MudStack>
-                }
-                @if (!string.IsNullOrEmpty(_selectedEvent.Description))
-                {
-                    <MudStack Row="true" Spacing="2">
-                        <MudIcon Icon="@Icons.Material.Outlined.Notes" Color="Color.Secondary" Size="Size.Small" />
-                        <MudText Typo="Typo.body2" Color="Color.Secondary">@_selectedEvent.Description</MudText>
-                    </MudStack>
-                }
-                @if (_selectedEvent.Attendees.Any())
-                {
-                    <MudStack Spacing="1">
-                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
-                            <MudIcon Icon="@Icons.Material.Outlined.Group" Color="Color.Secondary" Size="Size.Small" />
-                            <MudText Typo="Typo.body2" Style="font-weight: 600;">Attendees</MudText>
-                        </MudStack>
-                        <MudStack Row="true" Spacing="1" Style="flex-wrap: wrap; padding-left: 28px;">
-                            @foreach (var a in _selectedEvent.Attendees)
-                            {
-                                <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Primary"
-                                         Avatar="@a.Substring(0,2).ToUpper()"
-                                         Style="font-size: 0.72rem; border-radius: 8px;">
-                                    @a
-                                </MudChip>
-                            }
-                        </MudStack>
-                    </MudStack>
-                }
-            </MudStack>
-        }
-    </DialogContent>
-    <DialogActions>
-        <MudButton Color="Color.Error" Variant="Variant.Text" StartIcon="@Icons.Material.Outlined.Delete"
-                   OnClick="@(() => { _events.Remove(_selectedEvent!); _detailOpen = false; })">
-            Delete
-        </MudButton>
-        <MudSpacer />
-        <MudButton Color="Color.Primary" Variant="Variant.Filled" Style="border-radius: 8px; font-weight: 700;"
-                   OnClick="@(() => _detailOpen = false)">
-            Close
-        </MudButton>
-    </DialogActions>
-</MudDialog>
-
-<MudDialog @bind-IsVisible="_addOpen" Options="@(new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseButton = true })">
-    <TitleContent>
-        <MudText Typo="Typo.h6" Style="font-weight: 700;">New Event</MudText>
-    </TitleContent>
-    <DialogContent>
-        <MudStack Spacing="3">
-            <MudTextField @bind-Value="_newEvent.Title" Label="Title" Variant="Variant.Outlined"
-                          Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Outlined.Title"
-                          Style="border-radius: 10px;" />
-            <MudTextField @bind-Value="_newEvent.Description" Label="Description" Variant="Variant.Outlined"
-                          Lines="2" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Outlined.Notes" />
-            <MudTextField @bind-Value="_newEvent.Location" Label="Location" Variant="Variant.Outlined"
-                          Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Outlined.LocationOn" />
-            <MudGrid Spacing="2">
-                <MudItem xs="6">
-                    <MudDatePicker @bind-Date="_newStartDate" Label="Start date" Variant="Variant.Outlined"
-                                   DateFormat="dd.MM.yyyy" />
-                </MudItem>
-                <MudItem xs="6">
-                    <MudTimePicker @bind-Time="_newStartTime" Label="Start time" Variant="Variant.Outlined" />
-                </MudItem>
-                <MudItem xs="6">
-                    <MudDatePicker @bind-Date="_newEndDate" Label="End date" Variant="Variant.Outlined"
-                                   DateFormat="dd.MM.yyyy" />
-                </MudItem>
-                <MudItem xs="6">
-                    <MudTimePicker @bind-Time="_newEndTime" Label="End time" Variant="Variant.Outlined" />
-                </MudItem>
-            </MudGrid>
-            <MudSelect T="string" @bind-Value="_newEvent.Category" Label="Category" Variant="Variant.Outlined"
-                       Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Outlined.Label">
-                @foreach (var cat in _categories)
-                {
-                    <MudSelectItem Value="@cat.Name">@cat.Name</MudSelectItem>
-                }
-            </MudSelect>
-        </MudStack>
-    </DialogContent>
-    <DialogActions>
-        <MudButton Variant="Variant.Text" OnClick="@(() => _addOpen = false)">Cancel</MudButton>
-        <MudButton Color="Color.Primary" Variant="Variant.Filled"
-                   Style="border-radius: 8px; font-weight: 700;"
-                   StartIcon="@Icons.Material.Filled.Add"
-                   OnClick="SaveNewEvent">
-            Save Event
-        </MudButton>
-    </DialogActions>
-</MudDialog>
-
-@code {
-
-    // ── Temporäre lokale Models (später durch eigene ersetzen) ───────────────
-
-    private class CalendarEvent
-    {
-        public string Id { get; set; } = Guid.NewGuid().ToString();
-        public string Title { get; set; } = "";
-        public string Description { get; set; } = "";
-        public string Location { get; set; } = "";
-        public string Category { get; set; } = "Meeting";
-        public DateTime Start { get; set; }
-        public DateTime End { get; set; }
-        public List<string> Attendees { get; set; } = new();
-    }
-
-    private class CategoryFilter
-    {
-        public string Name { get; set; } = "";
-        public Color Color { get; set; }
-        public string Hex { get; set; } = "#6366F1";
-        public bool Active { get; set; } = true;
-    }
-
-    // ── State ────────────────────────────────────────────────────────────────
-
-    private DateTime _currentMonth = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
-    private DateTime? _selectedDay;
-    private string _activeView = "Month";
-    private bool _detailOpen;
-    private bool _addOpen;
-    private CalendarEvent? _selectedEvent;
-    private CalendarEvent _newEvent = new();
-    private DateTime? _newStartDate = DateTime.Today;
-    private DateTime? _newEndDate = DateTime.Today;
-    private TimeSpan? _newStartTime = new TimeSpan(9, 0, 0);
-    private TimeSpan? _newEndTime = new TimeSpan(10, 0, 0);
-
-    private List<CategoryFilter> _categories = new()
-    {
-        new() { Name = "Meeting",  Color = Color.Primary,   Hex = "#6366F1" },
-        new() { Name = "Review",   Color = Color.Warning,   Hex = "#F59E0B" },
-        new() { Name = "Release",  Color = Color.Success,   Hex = "#10B981" },
-        new() { Name = "Personal", Color = Color.Secondary, Hex = "#8B5CF6" },
-        new() { Name = "Deadline", Color = Color.Error,     Hex = "#EF4444" },
-    };
-
-    private List<CalendarEvent> _events = new()
-    {
-        new() { Title = "Sprint Planning",       Category = "Meeting",  Start = DateTime.Today.AddDays(0).Date.AddHours(9),  End = DateTime.Today.AddDays(0).Date.AddHours(10),  Location = "Room A", Attendees = new() { "Lucas M.", "Anna K.", "Tim R." }, Description = "Sprint 5 kick-off planning session." },
-        new() { Title = "Design Review",         Category = "Review",   Start = DateTime.Today.AddDays(1).Date.AddHours(14), End = DateTime.Today.AddDays(1).Date.AddHours(15),  Location = "Zoom",   Attendees = new() { "Sara B.", "Anna K." },             Description = "Review new onboarding screens." },
-        new() { Title = "v2.0 Release",          Category = "Release",  Start = DateTime.Today.AddDays(3).Date.AddHours(10), End = DateTime.Today.AddDays(3).Date.AddHours(11),  Location = "",       Attendees = new() { "Lucas M.", "Tim R." },              Description = "Production release of v2.0." },
-        new() { Title = "1:1 with Anna",         Category = "Meeting",  Start = DateTime.Today.AddDays(2).Date.AddHours(11), End = DateTime.Today.AddDays(2).Date.AddHours(12),  Location = "Office", Attendees = new() { "Anna K." },                        Description = "" },
-        new() { Title = "API Deadline",          Category = "Deadline", Start = DateTime.Today.AddDays(5).Date.AddHours(18), End = DateTime.Today.AddDays(5).Date.AddHours(18),  Location = "",       Attendees = new(),                                      Description = "Public API documentation must be finalized." },
-        new() { Title = "Team Retrospective",    Category = "Meeting",  Start = DateTime.Today.AddDays(7).Date.AddHours(15), End = DateTime.Today.AddDays(7).Date.AddHours(16),  Location = "Room B", Attendees = new() { "Lucas M.", "Anna K.", "Tim R.", "Sara B." }, Description = "" },
-        new() { Title = "Doctor Appointment",    Category = "Personal", Start = DateTime.Today.AddDays(4).Date.AddHours(8),  End = DateTime.Today.AddDays(4).Date.AddHours(9),   Location = "City Center", Attendees = new(),                               Description = "" },
-        new() { Title = "Code Review Session",   Category = "Review",   Start = DateTime.Today.AddDays(6).Date.AddHours(10), End = DateTime.Today.AddDays(6).Date.AddHours(11),  Location = "Zoom",   Attendees = new() { "Tim R.", "Lucas M." },              Description = "Review EF Core migration PR." },
-        new() { Title = "Stakeholder Demo",      Category = "Meeting",  Start = DateTime.Today.AddDays(9).Date.AddHours(13), End = DateTime.Today.AddDays(9).Date.AddHours(14),  Location = "Boardroom", Attendees = new() { "Lucas M.", "Anna K." },          Description = "Demo of sprint results to stakeholders." },
-        new() { Title = "Hotfix Deadline",       Category = "Deadline", Start = DateTime.Today.AddDays(2).Date.AddHours(17), End = DateTime.Today.AddDays(2).Date.AddHours(17),  Location = "",       Attendees = new(),                                      Description = "Auth hotfix must be deployed." },
-        new() { Title = "Gym",                   Category = "Personal", Start = DateTime.Today.AddDays(1).Date.AddHours(7),  End = DateTime.Today.AddDays(1).Date.AddHours(8),   Location = "FitX",   Attendees = new(),                                      Description = "" },
-        new() { Title = "Architecture Review",   Category = "Review",   Start = DateTime.Today.AddDays(10).Date.AddHours(9),End = DateTime.Today.AddDays(10).Date.AddHours(11),  Location = "Room A", Attendees = new() { "Lucas M.", "Tim R.", "Sara B." },   Description = "Review new microservice boundaries." },
-    };
-
-    // ── Navigation ───────────────────────────────────────────────────────────
-
-    private void PrevMonth() => _currentMonth = _currentMonth.AddMonths(-1);
-    private void NextMonth() => _currentMonth = _currentMonth.AddMonths(1);
-    private void GoToToday()  { _currentMonth = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1); _selectedDay = DateTime.Today; }
-    private void SelectDay(DateTime day) => _selectedDay = day;
-    private void ToggleCategory(CategoryFilter cat) => cat.Active = !cat.Active;
-
-    // ── Dialogs ──────────────────────────────────────────────────────────────
-
-    private void OpenEventDetail(CalendarEvent ev) { _selectedEvent = ev; _detailOpen = true; }
-
-    private void OpenAddDialog()
-    {
-        _newEvent = new CalendarEvent { Category = "Meeting" };
-        _newStartDate = _selectedDay ?? DateTime.Today;
-        _newEndDate   = _selectedDay ?? DateTime.Today;
-        _newStartTime = new TimeSpan(9, 0, 0);
-        _newEndTime   = new TimeSpan(10, 0, 0);
-        _addOpen = true;
-    }
-
-    private void SaveNewEvent()
-    {
-        if (string.IsNullOrWhiteSpace(_newEvent.Title)) return;
-        _newEvent.Start = (_newStartDate ?? DateTime.Today).Date + (_newStartTime ?? TimeSpan.Zero);
-        _newEvent.End   = (_newEndDate   ?? DateTime.Today).Date + (_newEndTime   ?? TimeSpan.Zero);
-        _events.Add(_newEvent);
-        _addOpen = false;
-    }
-
-    // ── Calendar Helpers ─────────────────────────────────────────────────────
-
-    private List<List<DateTime>> GetCalendarWeeks()
-    {
-        var weeks = new List<List<DateTime>>();
-        var first = _currentMonth;
-        var offset = ((int)first.DayOfWeek + 6) % 7; // Monday = 0
-        var start = first.AddDays(-offset);
-
-        for (int w = 0; w < 6; w++)
-        {
-            var week = Enumerable.Range(0, 7).Select(d => start.AddDays(w * 7 + d)).ToList();
-            if (week.Any(d => d.Month == _currentMonth.Month))
-                weeks.Add(week);
-        }
-        return weeks;
-    }
-
-    private List<CalendarEvent> GetEventsForDay(DateTime day) =>
-        _events.Where(e => e.Start.Date == day.Date).OrderBy(e => e.Start).ToList();
-
-    private List<DateTime> GetCurrentWeekDays()
-    {
-        var today = _selectedDay ?? DateTime.Today;
-        var offset = ((int)today.DayOfWeek + 6) % 7;
-        var monday = today.AddDays(-offset);
-        return Enumerable.Range(0, 7).Select(d => monday.AddDays(d)).ToList();
-    }
-}

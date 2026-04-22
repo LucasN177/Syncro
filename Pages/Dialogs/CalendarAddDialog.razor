@@ -1,0 +1,48 @@
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6" Style="font-weight: 700;">New Event</MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudStack Spacing="3">
+            <MudTextField @bind-Value="NewEvent.Title" Label="Title" Variant="Variant.Outlined"
+                          Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Outlined.Title"
+                          Style="border-radius: 10px;" />
+            <MudTextField @bind-Value="NewEvent.Description" Label="Description" Variant="Variant.Outlined"
+                          Lines="2" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Outlined.Notes" />
+            <MudTextField @bind-Value="NewEvent.Location" Label="Location" Variant="Variant.Outlined"
+                          Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Outlined.LocationOn" />
+            <MudGrid Spacing="2">
+                <MudItem xs="6">
+                    <MudDatePicker @bind-Date="_newStartDate" Label="Start date" Variant="Variant.Outlined"
+                                   DateFormat="dd.MM.yyyy" />
+                </MudItem>
+                <MudItem xs="6">
+                    <MudTimePicker @bind-Time="_newStartTime" Label="Start time" Variant="Variant.Outlined" />
+                </MudItem>
+                <MudItem xs="6">
+                    <MudDatePicker @bind-Date="_newEndDate" Label="End date" Variant="Variant.Outlined"
+                                   DateFormat="dd.MM.yyyy" />
+                </MudItem>
+                <MudItem xs="6">
+                    <MudTimePicker @bind-Time="_newEndTime" Label="End time" Variant="Variant.Outlined" />
+                </MudItem>
+            </MudGrid>
+            <MudSelect T="string" @bind-Value="NewEvent.Category" Label="Category" Variant="Variant.Outlined"
+                       Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Outlined.Label">
+                @foreach (var cat in Categories)
+                {
+                    <MudSelectItem Value="@cat.Name">@cat.Name</MudSelectItem>
+                }
+            </MudSelect>
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudButton Variant="Variant.Text" OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled"
+                   Style="border-radius: 8px; font-weight: 700;"
+                   StartIcon="@Icons.Material.Filled.Add"
+                   OnClick="Submit">
+            Save Event
+        </MudButton>
+    </DialogActions>
+</MudDialog>

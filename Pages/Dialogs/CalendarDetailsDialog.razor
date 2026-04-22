@@ -1,0 +1,69 @@
+<MudDialog Options="@(new DialogOptions { MaxWidth = MaxWidth.ExtraSmall, FullWidth = true, CloseButton = true })">
+    <TitleContent>
+        @if (SelectedEvent != null)
+        {
+            var cat = Categories.FirstOrDefault(c => c.Name == SelectedEvent.Category);
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                <MudIcon Icon="@Icons.Material.Filled.Circle" Style="@($"color: {cat?.Hex}; font-size: 14px;")" />
+                <MudText Typo="Typo.h6" Style="font-weight: 700;">@SelectedEvent.Title</MudText>
+            </MudStack>
+        }
+    </TitleContent>
+    <DialogContent>
+        @if (SelectedEvent != null)
+        {
+            <MudStack Spacing="3">
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                    <MudIcon Icon="@Icons.Material.Outlined.Schedule" Color="Color.Secondary" Size="Size.Small" />
+                    <MudText Typo="Typo.body2">
+                        @SelectedEvent.Start.ToString("dddd, MMMM d · HH:mm") – @SelectedEvent.End.ToString("HH:mm")
+                    </MudText>
+                </MudStack>
+                @if (!string.IsNullOrEmpty(SelectedEvent.Location))
+                {
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                        <MudIcon Icon="@Icons.Material.Outlined.LocationOn" Color="Color.Secondary" Size="Size.Small" />
+                        <MudText Typo="Typo.body2">@SelectedEvent.Location</MudText>
+                    </MudStack>
+                }
+                @if (!string.IsNullOrEmpty(SelectedEvent.Description))
+                {
+                    <MudStack Row="true" Spacing="2">
+                        <MudIcon Icon="@Icons.Material.Outlined.Notes" Color="Color.Secondary" Size="Size.Small" />
+                        <MudText Typo="Typo.body2" Color="Color.Secondary">@SelectedEvent.Description</MudText>
+                    </MudStack>
+                }
+                @if (SelectedEvent.Attendees.Any())
+                {
+                    <MudStack Spacing="1">
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                            <MudIcon Icon="@Icons.Material.Outlined.Group" Color="Color.Secondary" Size="Size.Small" />
+                            <MudText Typo="Typo.body2" Style="font-weight: 600;">Attendees</MudText>
+                        </MudStack>
+                        <MudStack Row="true" Spacing="1" Style="flex-wrap: wrap; padding-left: 28px;">
+                            @foreach (var a in SelectedEvent.Attendees)
+                            {
+                                <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Primary"
+                                         Avatar="@a.Substring(0,2).ToUpper()"
+                                         Style="font-size: 0.72rem; border-radius: 8px;">
+                                    @a
+                                </MudChip>
+                            }
+                        </MudStack>
+                    </MudStack>
+                }
+            </MudStack>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton Color="Color.Error" Variant="Variant.Text" StartIcon="@Icons.Material.Outlined.Delete"
+                   OnClick="Submit">
+            Delete
+        </MudButton>
+        <MudSpacer />
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" Style="border-radius: 8px; font-weight: 700;"
+                   OnClick="Cancel">
+            Close
+        </MudButton>
+    </DialogActions>
+</MudDialog>
