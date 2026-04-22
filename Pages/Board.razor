@@ -1,5 +1,6 @@
 @page "/board"
 @using Syncro.Core.Models
+@using Syncro.FakeData
 @using Syncro.Layout.Helper
 
 <MudDropContainer T="KanbanCard"
@@ -176,37 +177,10 @@
 </MudDropContainer>
 
 @code {
-    
 
-    private readonly List<KanbanColumn> _columns = new()
-    {
-        new KanbanColumn
-        {
-            Id = "backlog", Title = "BACKLOG",
-            ChipColor = Color.Default, BadgeColor = Color.Default,
-            Cards = new()
-        },
-        new KanbanColumn
-        {
-            Id = "todo", Title = "TO DO",
-            ChipColor = Color.Info, BadgeColor = Color.Info,
-            Cards = new()
-        },
-        new KanbanColumn
-        {
-            Id = "inprogress", Title = "IN PROGRESS",
-            ChipColor = Color.Warning, BadgeColor = Color.Warning,
-            Cards = new()
-        },
-        new KanbanColumn
-        {
-            Id = "done", Title = "DONE",
-            ChipColor = Color.Success, BadgeColor = Color.Success,
-            Cards = new()
-        },
-    };
-    
 
+    private readonly List<KanbanColumn> _columns = SampleData.Columns;
+    
     private MudDropContainer<KanbanCard>? _dropContainer;
 
     private IEnumerable<KanbanCard> GetAllCards() => _columns.SelectMany(c => c.Cards);
