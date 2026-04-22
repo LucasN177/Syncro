@@ -1,7 +1,360 @@
 ﻿@page "/"
 
-<PageTitle>Home</PageTitle>
+<MudContainer MaxWidth="MaxWidth.False" Class="pa-6" Style="min-height: 100vh; background: #F8FAFC;">
+    
+    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-6">
+        <MudStack Spacing="0">
+            <MudText Typo="Typo.h4" Style="font-weight: 800; letter-spacing: -1px;">Dashboard</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                Welcome back, Lucas · @DateTime.Today.ToString("dddd, MMMM d")
+            </MudText>
+        </MudStack>
+        <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+            <MudChip T="string" Icon="@Icons.Material.Filled.Circle" IconColor="Color.Success"
+                     Size="Size.Small" Variant="Variant.Outlined" Style="font-weight: 600;">
+                Sprint 4 – 6 days left
+            </MudChip>
+            <MudButton Variant="Variant.Outlined" Size="Size.Small"
+                       StartIcon="@Icons.Material.Outlined.FileDownload"
+                       Style="border-radius: 10px; font-weight: 700;">
+                Export
+            </MudButton>
+        </MudStack>
+    </MudStack>
+    
+    <MudGrid Spacing="4" Class="mb-6">
+        @foreach (var kpi in _kpis)
+        {
+            <MudItem xs="12" sm="6" lg="3">
+                <MudPaper Elevation="0" Class="pa-5"
+                          Style="border-radius: 16px; border: 1px solid var(--mud-palette-divider); background: #fff; height: 100%;">
+                    <MudStack Spacing="3">
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                            <MudText Typo="Typo.body2" Color="Color.Secondary" Style="font-weight: 600;">
+                                @kpi.Label
+                            </MudText>
+                            <MudAvatar Style="@($"background: {kpi.Hex}18; width: 38px; height: 38px;")">
+                                <MudIcon Icon="@kpi.Icon" Style="@($"color: {kpi.Hex}; font-size: 18px;")" />
+                            </MudAvatar>
+                        </MudStack>
+                        <MudStack Spacing="0">
+                            <MudText Style="font-size: 2rem; font-weight: 800; letter-spacing: -1px; line-height: 1;">
+                                @kpi.Value
+                            </MudText>
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Class="mt-1">
+                                <MudIcon Icon="@(kpi.TrendUp ? Icons.Material.Filled.TrendingUp : Icons.Material.Filled.TrendingDown)"
+                                         Size="Size.Small"
+                                         Style="@($"font-size: 14px; color: {(kpi.TrendUp ? "#10B981" : "#EF4444")}")" />
+                                <MudText Typo="Typo.caption"
+                                         Style="@($"font-weight: 700; color: {(kpi.TrendUp ? "#10B981" : "#EF4444")}")">
+                                    @kpi.Trend
+                                </MudText>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary">vs last sprint</MudText>
+                            </MudStack>
+                        </MudStack>
+                        <MudProgressLinear Value="@kpi.Progress" Rounded="true" Size="Size.Small"
+                                           Style="@($"--mud-palette-primary: {kpi.Hex};")" />
+                    </MudStack>
+                </MudPaper>
+            </MudItem>
+        }
+    </MudGrid>
+    
+    <MudGrid Spacing="4" Class="mb-4">
+        
+        <MudItem xs="12" lg="8">
+            <MudPaper Elevation="0" Class="pa-5"
+                      Style="border-radius: 16px; border: 1px solid var(--mud-palette-divider); background: #fff; height: 100%;">
+                <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-4">
+                    <MudStack Spacing="0">
+                        <MudText Typo="Typo.h6" Style="font-weight: 700;">Sprint Burndown</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Remaining story points over time</MudText>
+                    </MudStack>
+                    <MudStack Row="true" Spacing="2">
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                            <div style="width:10px;height:10px;border-radius:2px;background:#6366F1;"></div>
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">Actual</MudText>
+                        </MudStack>
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                            <div style="width:10px;height:10px;border-radius:2px;background:#E2E8F0;"></div>
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">Ideal</MudText>
+                        </MudStack>
+                    </MudStack>
+                </MudStack>
+                
+                <svg viewBox="0 0 600 200" style="width:100%;height:200px;" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <linearGradient id="burnActual" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stop-color="#6366F1" stop-opacity="0.2"/>
+                            <stop offset="100%" stop-color="#6366F1" stop-opacity="0"/>
+                        </linearGradient>
+                    </defs>
+                    @for (int i = 0; i <= 4; i++)
+                    {
+                        var y = 10 + i * 45;
+                        var label = 80 - i * 20;
+                        <line x1="40" y1="@y" x2="590" y2="@y" stroke="#F1F5F9" stroke-width="1"/>
+                        <MudText x="30" y="@(y+4)" text-anchor="end" font-size="10" fill="#94A3B8">@label</MudText>
+                    }
+                    <line x1="40" y1="10" x2="590" y2="190" stroke="#E2E8F0" stroke-width="2" stroke-dasharray="6,4"/>
+                    <path d="M40,10 L125,28 L210,55 L295,72 L380,95 L465,100 L510,130 L590,190 L590,190 L510,190 L465,190 L380,190 L295,190 L210,190 L125,190 L40,190 Z"
+                          fill="url(#burnActual)" />
+                    <polyline points="40,10 125,28 210,55 295,72 380,95 465,100 510,130"
+                              fill="none" stroke="#6366F1" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    @{
+                        var pts = new (double x, double y)[] { (40,10),(125,28),(210,55),(295,72),(380,95),(465,100),(510,130) };
+                    }
+                    @foreach (var pt in pts)
+                    {
+                        <circle cx="@pt.x" cy="@pt.y" r="4" fill="#6366F1" stroke="#fff" stroke-width="2"/>
+                    }
+                    <line x1="510" y1="10" x2="510" y2="190" stroke="#6366F1" stroke-width="1.5" stroke-dasharray="4,3" opacity="0.5"/>
+                    <text x="514" y="22" font-size="10" fill="#6366F1" font-weight="700">Today</text>
+                    @{
+                        var days = new[] { "D1","D2","D3","D4","D5","D6","D7","D8","D9","D10" };
+                        for (int i = 0; i < days.Length; i++)
+                        {
+                            var xpos = 40 + i * 61;
+                            //<MudText x="@xpos" y="200" text-anchor="middle" font-size="10" fill="#94A3B8">@days[i]</MudText>
+                        }
+                    }
+                </svg>
+            </MudPaper>
+        </MudItem>
+        
+        <MudItem xs="12" lg="4">
+            <MudPaper Elevation="0" Class="pa-5"
+                      Style="border-radius: 16px; border: 1px solid var(--mud-palette-divider); background: #fff; height: 100%;">
+                <MudStack Spacing="0" Class="mb-4">
+                    <MudText Typo="Typo.h6" Style="font-weight: 700;">Team Workload</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">Open tasks per member</MudText>
+                </MudStack>
+                <MudStack Spacing="3">
+                    @foreach (var member in _teamMembers)
+                    {
+                        <MudStack Spacing="1">
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                                    <MudAvatar Color="@member.Color" Size="Size.Small"
+                                               Style="font-size: 0.68rem; font-weight: 800; width: 28px; height: 28px;">
+                                        @member.Initials
+                                    </MudAvatar>
+                                    <MudText Typo="Typo.body2" Style="font-weight: 600;">@member.Name</MudText>
+                                </MudStack>
+                                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                    <MudText Typo="Typo.body2" Style="font-weight: 700;">@member.Tasks</MudText>
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">tasks</MudText>
+                                </MudStack>
+                            </MudStack>
+                            <MudProgressLinear Value="@(member.Tasks * 100 / 12)"
+                                               Color="@member.Color" Rounded="true" Size="Size.Small" />
+                        </MudStack>
+                    }
+                </MudStack>
+            </MudPaper>
+        </MudItem>
 
-<h1 class="mt-4">Hello, world!</h1>
+    </MudGrid>
+    
+    <MudGrid Spacing="4">
+        
+        <MudItem xs="12" lg="4">
+            <MudPaper Elevation="0" Class="pa-5"
+                      Style="border-radius: 16px; border: 1px solid var(--mud-palette-divider); background: #fff; height: 100%;">
+                <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-4">
+                    <MudStack Spacing="0">
+                        <MudText Typo="Typo.h6" Style="font-weight: 700;">Activity</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Latest updates</MudText>
+                    </MudStack>
+                    <MudIconButton Icon="@Icons.Material.Outlined.Refresh" Size="Size.Small" Color="Color.Inherit" />
+                </MudStack>
+                <MudTimeline TimelinePosition="TimelinePosition.Start" TimelineAlign="TimelineAlign.Start">
+                    @foreach (var act in _activities)
+                    {
+                        <MudTimelineItem Color="@act.Color" Size="Size.Small" Elevation="0">
+                            <ItemContent>
+                                <MudStack Spacing="0" Class="mb-3">
+                                    <MudText Typo="Typo.body2" Style="font-weight: 600; line-height: 1.4;">@act.Text</MudText>
+                                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1" Class="mt-1">
+                                        <MudAvatar Size="Size.Small" Color="@act.UserColor"
+                                                   Style="font-size: 0.6rem; font-weight: 700; width: 18px; height: 18px;">
+                                            @act.User.Substring(0, 2)
+                                        </MudAvatar>
+                                        <MudText Typo="Typo.caption" Color="Color.Secondary">@act.User · @act.Time</MudText>
+                                    </MudStack>
+                                </MudStack>
+                            </ItemContent>
+                        </MudTimelineItem>
+                    }
+                </MudTimeline>
+            </MudPaper>
+        </MudItem>
+        
+        <MudItem xs="12" sm="6" lg="4">
+            <MudPaper Elevation="0" Class="pa-5"
+                      Style="border-radius: 16px; border: 1px solid var(--mud-palette-divider); background: #fff; height: 100%;">
+                <MudStack Spacing="0" Class="mb-4">
+                    <MudText Typo="Typo.h6" Style="font-weight: 700;">Task Breakdown</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary">By status this sprint</MudText>
+                </MudStack>
+                
+                <MudStack AlignItems="AlignItems.Center" Class="mb-4">
+                    <svg viewBox="0 0 160 160" style="width:150px;height:150px;">
+                        {{!-- Segments: total 32 tasks --}}
+                        {{!-- Done: 8 → 90°, InProgress: 10 → 112.5°, Todo: 9 → 101.25°, Backlog: 5 → 56.25° --}}
+                        <circle cx="80" cy="80" r="55" fill="none" stroke="#F1F5F9" stroke-width="22"/>
+                        <circle cx="80" cy="80" r="55" fill="none" stroke="#10B981" stroke-width="22"
+                                stroke-dasharray="@(CalcDash(8,32)) @(CalcCircumference(55))"
+                                stroke-dashoffset="@(CalcOffset(0,32,55))"
+                                transform="rotate(-90 80 80)"/>
+                        <circle cx="80" cy="80" r="55" fill="none" stroke="#F59E0B" stroke-width="22"
+                                stroke-dasharray="@(CalcDash(10,32)) @(CalcCircumference(55))"
+                                stroke-dashoffset="@(CalcOffset(8,32,55))"
+                                transform="rotate(-90 80 80)"/>
+                        <circle cx="80" cy="80" r="55" fill="none" stroke="#6366F1" stroke-width="22"
+                                stroke-dasharray="@(CalcDash(9,32)) @(CalcCircumference(55))"
+                                stroke-dashoffset="@(CalcOffset(18,32,55))"
+                                transform="rotate(-90 80 80)"/>
+                        <circle cx="80" cy="80" r="55" fill="none" stroke="#E2E8F0" stroke-width="22"
+                                stroke-dasharray="@(CalcDash(5,32)) @(CalcCircumference(55))"
+                                stroke-dashoffset="@(CalcOffset(27,32,55))"
+                                transform="rotate(-90 80 80)"/>
+                        <text x="80" y="76" text-anchor="middle" font-size="22" font-weight="800" fill="#1E293B">32</text>
+                        <text x="80" y="92" text-anchor="middle" font-size="10" fill="#94A3B8">total</text>
+                    </svg>
+                </MudStack>
 
-Welcome to your new app.
+                <MudStack Spacing="2">
+                    @foreach (var seg in _segments)
+                    {
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                                <div style="@($"width:10px;height:10px;border-radius:3px;background:{seg.Hex};")"></div>
+                                <MudText Typo="Typo.body2" Style="font-weight: 600;">@seg.Label</MudText>
+                            </MudStack>
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                                <MudText Typo="Typo.body2" Style="font-weight: 700;">@seg.Count</MudText>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary" Style="min-width:32px;text-align:right;">
+                                    @($"{seg.Count * 100 / 32}%")
+                                </MudText>
+                            </MudStack>
+                        </MudStack>
+                    }
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+        
+        <MudItem xs="12" sm="6" lg="4">
+            <MudPaper Elevation="0" Class="pa-5"
+                      Style="border-radius: 16px; border: 1px solid var(--mud-palette-divider); background: #fff; height: 100%;">
+                <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-4">
+                    <MudStack Spacing="0">
+                        <MudText Typo="Typo.h6" Style="font-weight: 700;">Upcoming</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Next 5 events</MudText>
+                    </MudStack>
+                    <MudChip T="string" Size="Size.Small" Color="Color.Primary" Variant="Variant.Text"
+                             Style="font-weight: 700; font-size: 0.7rem;">
+                        View All
+                    </MudChip>
+                </MudStack>
+                <MudStack Spacing="2">
+                    @foreach (var ev in _upcomingEvents)
+                    {
+                        <MudPaper Elevation="0" Class="pa-3"
+                                  Style="@($"border-radius: 10px; border-left: 4px solid {ev.Hex}; background: {ev.Hex}0D;")">
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                                <MudStack Spacing="0">
+                                    <MudText Typo="Typo.body2" Style="font-weight: 700;">@ev.Title</MudText>
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">@ev.When</MudText>
+                                </MudStack>
+                                <MudChip T="string" Size="Size.Small" Variant="Variant.Text"
+                                         Style="@($"font-size: 0.65rem; font-weight: 700; color: {ev.Hex};")">
+                                    @ev.Tag
+                                </MudChip>
+                            </MudStack>
+                        </MudPaper>
+                    }
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+
+    </MudGrid>
+
+</MudContainer>
+
+@code {
+
+    // ── Temporäre lokale Models ──────────────────────────────────────────────
+
+    private record KpiCard(string Label, string Value, string Trend, bool TrendUp, string Icon, string Hex, double Progress);
+
+    private record TeamMember(string Name, string Initials, Color Color, int Tasks);
+
+    private record ActivityItem(string Text, string User, string Time, Color Color, Color UserColor);
+
+    private record DonutSegment(string Label, int Count, string Hex);
+
+    private record UpcomingEvent(string Title, string When, string Tag, string Hex);
+
+    // ── Data ─────────────────────────────────────────────────────────────────
+
+    private List<KpiCard> _kpis = new()
+    {
+        new("Open Tasks",      "24",   "+3",   false, Icons.Material.Outlined.Assignment,      "#6366F1", 60),
+        new("Completed",       "8",    "+5",   true,  Icons.Material.Outlined.CheckCircle,     "#10B981", 40),
+        new("In Progress",     "10",   "−1",   false, Icons.Material.Outlined.Autorenew,       "#F59E0B", 70),
+        new("Bugs Reported",   "3",    "−2",   true,  Icons.Material.Outlined.BugReport,       "#EF4444", 25),
+    };
+
+    private List<TeamMember> _teamMembers = new()
+    {
+        new("Lucas M.",  "LM", Color.Primary,   9),
+        new("Anna K.",   "AK", Color.Secondary, 7),
+        new("Tim R.",    "TR", Color.Tertiary,  5),
+        new("Sara B.",   "SB", Color.Info,      3),
+    };
+
+    private List<ActivityItem> _activities = new()
+    {
+        new("PRJ-040 moved to In Progress",          "Tim R.",   "2m ago",  Color.Warning,   Color.Tertiary),
+        new("PRJ-035 comment: \"Stripe keys ready\"","Anna K.",  "18m ago", Color.Info,      Color.Secondary),
+        new("PRJ-033 marked as Done",                "Lucas M.", "1h ago",  Color.Success,   Color.Primary),
+        new("New bug PRJ-041 reported",              "Sara B.",  "3h ago",  Color.Error,     Color.Info),
+        new("Sprint 4 started",                      "Lucas M.", "2d ago",  Color.Primary,   Color.Primary),
+    };
+
+    private List<DonutSegment> _segments = new()
+    {
+        new("Done",        8,  "#10B981"),
+        new("In Progress", 10, "#F59E0B"),
+        new("To Do",       9,  "#6366F1"),
+        new("Backlog",     5,  "#E2E8F0"),
+    };
+
+    private List<UpcomingEvent> _upcomingEvents = new()
+    {
+        new("Sprint Planning",     "Today · 09:00",    "Meeting",  "#6366F1"),
+        new("Hotfix Deadline",     "Today · 17:00",    "Deadline", "#EF4444"),
+        new("1:1 with Anna",       "Tomorrow · 11:00", "Meeting",  "#6366F1"),
+        new("Design Review",       "Tomorrow · 14:00", "Review",   "#F59E0B"),
+        new("v2.0 Release",        "Apr 25 · 10:00",   "Release",  "#10B981"),
+    };
+
+    // ── SVG Donut Helpers ────────────────────────────────────────────────────
+
+    private string CalcDash(int count, int total)
+    {
+        var circ = CalcCircumference(55);
+        var dash = circ * count / total;
+        return $"{dash:F1}";
+    }
+
+    private string CalcOffset(int startCount, int total, double r)
+    {
+        var circ = 2 * Math.PI * r;
+        var offset = circ - circ * startCount / total;
+        return $"{offset:F1}";
+    }
+
+    private double CalcCircumference(double r) => 2 * Math.PI * r;
+}
