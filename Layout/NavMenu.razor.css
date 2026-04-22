@@ -60,6 +60,11 @@
     color: white;
 }
 
+.mud-nav-link.active {
+    background-color: rgba(15, 118, 110, 0.12);
+    border-radius: 8px;
+}
+
 .nav-item ::deep a:hover {
     background-color: rgba(255,255,255,0.1);
     color: white;

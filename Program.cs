@@ -3,8 +3,13 @@ using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using MudBlazor.Services;
 using Supabase;
 using Syncro;
+using Syncro.Core.Interfaces.Infrastructure;
+using Syncro.Core.Interfaces.Services;
+using Syncro.Infrastructure;
+using Syncro.Services;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
+
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
@@ -26,5 +31,9 @@ builder.Services.AddSingleton<Client>(provider =>
         url!, key, options
     )
 );
+builder.Services.AddSingleton<IAuthRepository, AuthRepository>();
+
+builder.Services.AddSingleton<AppStateService>();
+builder.Services.AddSingleton<IAuthService, AuthService>();
 
 await builder.Build().RunAsync();

@@ -1,0 +1,235 @@
+@page "/board"
+@using Syncro.Core.Models
+@using Syncro.Layout.Helper
+
+<MudDropContainer T="KanbanCard"
+                  Items="@GetAllCards()"
+                  ItemsSelector="@((card, zoneId) => _columns.First(c => c.Id == zoneId).Cards.Contains(card))"
+                  ItemDropped="CardDropped"
+                  @ref="_dropContainer"
+                  Class="pa-6"
+                  Style="min-height: 100vh; background: #F8FAFC;">
+    <ChildContent>
+        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-6">
+            <MudStack Spacing="0">
+                <MudText Typo="Typo.h4" Style="font-weight: 800; letter-spacing: -1px;">Board</MudText>
+                <MudText Typo="Typo.body2" Color="Color.Secondary">
+                    @GetAllCards().Count() open issues · Sprint ends in 6 days
+                </MudText>
+            </MudStack>
+            <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+                <MudAvatarGroup Max="4" Spacing="2">
+                    <MudTooltip Text="Lucas M."><MudAvatar Size="Size.Small" Color="Color.Primary" Style="font-size:0.7rem;font-weight:700;">LM</MudAvatar></MudTooltip>
+                    <MudTooltip Text="Anna K."><MudAvatar Size="Size.Small" Color="Color.Secondary" Style="font-size:0.7rem;font-weight:700;">AK</MudAvatar></MudTooltip>
+                    <MudTooltip Text="Tim R."><MudAvatar Size="Size.Small" Color="Color.Tertiary" Style="font-size:0.7rem;font-weight:700;">TR</MudAvatar></MudTooltip>
+                    <MudTooltip Text="Sara B."><MudAvatar Size="Size.Small" Color="Color.Info" Style="font-size:0.7rem;font-weight:700;">SB</MudAvatar></MudTooltip>
+                </MudAvatarGroup>
+                <MudChip T="string" Icon="@Icons.Material.Filled.Circle" IconColor="Color.Success"
+                         Size="Size.Small" Variant="Variant.Outlined">
+                    Sprint 1 – Active
+                </MudChip>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                           StartIcon="@Icons.Material.Filled.Add"
+                           Size="Size.Small"
+                           Style="border-radius: 10px; font-weight: 700;">
+                    Add Issue
+                </MudButton>
+            </MudStack>
+        </MudStack>
+        
+        <MudGrid Spacing="4">
+            @foreach (var column in _columns)
+            {
+                <MudItem xs="12" sm="6" lg="3">
+                    <MudPaper Elevation="0"
+                              Style="@($"{StyleHelper.GetColumnStyle(column.Id)} min-height: 600px; border-radius: 16px; border: 1px solid var(--mud-palette-divider);")">
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="pa-4 pb-2">
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                                <MudChip T="string" Size="Size.Small" Color="@column.ChipColor"
+                                         Variant="Variant.Filled"
+                                         Style="font-weight: 700; font-size: 0.72rem; border-radius: 8px;">
+                                    @column.Title
+                                </MudChip>
+                                <MudBadge Content="@column.Cards.Count.ToString()" Color="@column.BadgeColor"
+                                          Bordered="true" Overlap="false" />
+                            </MudStack>
+                            <MudStack Row="true" Spacing="0">
+                                <MudTooltip Text="Add card">
+                                    <MudIconButton Icon="@Icons.Material.Filled.AddCircleOutline"
+                                                   Size="Size.Small" Color="Color.Inherit"
+                                                   OnClick="@(() => AddCard(column))" />
+                                </MudTooltip>
+                                <MudIconButton Icon="@Icons.Material.Filled.MoreHoriz"
+                                               Size="Size.Small" Color="Color.Inherit" />
+                            </MudStack>
+                        </MudStack>
+
+                        <MudDivider Class="mb-2" />
+                        
+                        <MudDropZone T="KanbanCard" Identifier="@column.Id"
+                                     Class="pa-3 pt-2"
+                                     Style="min-height: 520px;">
+                            @foreach (var card in column.Cards)
+                            {
+                                <MudPaper @key="card.Id" Elevation="1" Class="mb-3 pa-3"
+                                          Style="border-radius: 12px; cursor: grab; transition: box-shadow 0.2s;">
+                                    
+                                    <MudStack Row="true" AlignItems="AlignItems.Center"
+                                              Justify="Justify.SpaceBetween" Class="mb-2">
+                                        <MudStack Row="true" Spacing="1">
+                                            <MudChip T="string" Size="Size.Small"
+                                                     Color="@StyleHelper.GetPriorityColor(card.Priority)"
+                                                     Variant="Variant.Text"
+                                                     Icon="@StyleHelper.GetPriorityIcon(card.Priority)"
+                                                     Style="font-size: 0.65rem; font-weight: 700; height: 20px; padding: 0 6px;">
+                                                @card.Priority
+                                            </MudChip>
+                                            <MudChip T="string" Size="Size.Small" Color="Color.Default"
+                                                     Variant="Variant.Text"
+                                                     Style="font-size: 0.65rem; height: 20px; padding: 0 6px;">
+                                                @card.Type
+                                            </MudChip>
+                                        </MudStack>
+                                        <MudText Typo="Typo.caption" Color="Color.Secondary"
+                                                 Style="font-family: monospace; font-size: 0.65rem;">
+                                            @card.Id
+                                        </MudText>
+                                    </MudStack>
+                                    
+                                    <MudText Typo="Typo.body2"
+                                             Style="font-weight: 600; line-height: 1.4; margin-bottom: 10px;">
+                                        @card.Title
+                                    </MudText>
+                                    
+                                    @if (card.Tags.Any())
+                                    {
+                                        <MudStack Row="true" Spacing="1" Class="mb-3"
+                                                  Style="flex-wrap: wrap; gap: 4px;">
+                                            @foreach (var tag in card.Tags)
+                                            {
+                                                <MudChip T="string" Size="Size.Small"
+                                                         Variant="Variant.Outlined" Color="Color.Primary"
+                                                         Style="font-size: 0.62rem; height: 18px; padding: 0 6px; border-radius: 6px;">
+                                                    @tag
+                                                </MudChip>
+                                            }
+                                        </MudStack>
+                                    }
+                                    
+                                    @if (card.Progress.HasValue)
+                                    {
+                                        <MudStack Spacing="1" Class="mb-3">
+                                            <MudStack Row="true" Justify="Justify.SpaceBetween">
+                                                <MudText Typo="Typo.caption" Color="Color.Secondary">Progress</MudText>
+                                                <MudText Typo="Typo.caption" Color="Color.Secondary">@card.Progress%</MudText>
+                                            </MudStack>
+                                            <MudProgressLinear Color="@StyleHelper.GetProgressColor(card.Progress.Value)"
+                                                               Value="@card.Progress.Value"
+                                                               Rounded="true" Size="Size.Small" />
+                                        </MudStack>
+                                    }
+
+                                    <MudDivider Class="mb-2" />
+                                    
+                                    <MudStack Row="true" AlignItems="AlignItems.Center"
+                                              Justify="Justify.SpaceBetween">
+                                        <MudTooltip Text="@card.Assignee">
+                                            <MudAvatar Size="Size.Small" Color="@card.AvatarColor"
+                                                       Style="font-size: 0.65rem; font-weight: 700; width: 24px; height: 24px;">
+                                                @card.Assignee.Substring(0, 2).ToUpper()
+                                            </MudAvatar>
+                                        </MudTooltip>
+                                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                            @if (card.CommentCount > 0)
+                                            {
+                                                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="0">
+                                                    <MudIcon Icon="@Icons.Material.Outlined.ChatBubbleOutline"
+                                                             Size="Size.Small" Color="Color.Secondary"
+                                                             Style="font-size: 13px;" />
+                                                    <MudText Typo="Typo.caption" Color="Color.Secondary" Class="ml-1">
+                                                        @card.CommentCount
+                                                    </MudText>
+                                                </MudStack>
+                                            }
+                                            @if (card.HasAttachment)
+                                            {
+                                                <MudIcon Icon="@Icons.Material.Outlined.AttachFile"
+                                                         Size="Size.Small" Color="Color.Secondary"
+                                                         Style="font-size: 13px;" />
+                                            }
+                                            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                                @card.DueDate
+                                            </MudText>
+                                        </MudStack>
+                                    </MudStack>
+
+                                </MudPaper>
+                            }
+                        </MudDropZone>
+
+                    </MudPaper>
+                </MudItem>
+            }
+        </MudGrid>
+    </ChildContent>
+
+</MudDropContainer>
+
+@code {
+    
+
+    private readonly List<KanbanColumn> _columns = new()
+    {
+        new KanbanColumn
+        {
+            Id = "backlog", Title = "BACKLOG",
+            ChipColor = Color.Default, BadgeColor = Color.Default,
+            Cards = new()
+        },
+        new KanbanColumn
+        {
+            Id = "todo", Title = "TO DO",
+            ChipColor = Color.Info, BadgeColor = Color.Info,
+            Cards = new()
+        },
+        new KanbanColumn
+        {
+            Id = "inprogress", Title = "IN PROGRESS",
+            ChipColor = Color.Warning, BadgeColor = Color.Warning,
+            Cards = new()
+        },
+        new KanbanColumn
+        {
+            Id = "done", Title = "DONE",
+            ChipColor = Color.Success, BadgeColor = Color.Success,
+            Cards = new()
+        },
+    };
+    
+
+    private MudDropContainer<KanbanCard>? _dropContainer;
+
+    private IEnumerable<KanbanCard> GetAllCards() => _columns.SelectMany(c => c.Cards);
+
+    private void CardDropped(MudItemDropInfo<KanbanCard> dropInfo)
+    {
+        if (dropInfo.Item == null) return;
+
+        foreach (var column in _columns)
+            column.Cards.Remove(dropInfo.Item);
+
+        var target = _columns.FirstOrDefault(c => c.Id == dropInfo.DropzoneIdentifier);
+        if (target != null)
+        {
+            var index = Math.Clamp(dropInfo.IndexInZone, 0, target.Cards.Count);
+            target.Cards.Insert(index, dropInfo.Item);
+        }
+    }
+
+    private void AddCard(KanbanColumn column)
+    {
+        
+    }
+
+    
+}

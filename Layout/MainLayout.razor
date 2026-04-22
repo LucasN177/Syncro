@@ -1,7 +1,13 @@
-﻿@inherits LayoutComponentBase
+﻿@using Syncro.Core.Interfaces.Services
+@using Syncro.Services
+@inherits LayoutComponentBase
+@inject NavigationManager NavigationManager
+@inject AppStateService AppStateService
+@inject IAuthService AuthService
+
 
 @* Required *@
-<MudThemeProvider />
+<MudThemeProvider Theme="@_theme" IsDarkMode="@AppStateService.IsDarkMode"/>
 <MudPopoverProvider />
 
 @* Needed for dialogs *@
@@ -10,18 +16,144 @@
 @* Needed for snackbars *@
 <MudSnackbarProvider />
 
-<div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
+<MudLayout>
+    <MudAppBar Elevation="2" Color="Color.Primary" Fixed="true" Dense="false">
+        <MudIconButton Icon="@Icons.Material.Filled.Menu" 
+                       Color="Color.Inherit" 
+                       Edge="Edge.Start" 
+                       OnClick="@(() => AppStateService.DrawerToggle())" />
+        
+        <MudHidden Breakpoint="Breakpoint.SmAndDown">
+            <MudStack Row="false" Spacing="0">
+                <MudText Typo="Typo.h5" Class="mr-6 font-weight-bold" Style="margin-bottom: 0">
+                    Syncro
+                </MudText>
+                <MudText Typo="Typo.body2" Style="margin-top: 0">By Lucas Nagelsmann</MudText>
+            </MudStack>
+            
+        </MudHidden>
+        
+        <MudSpacer />
+        
+        <MudIconButton Icon="@(AppStateService.IsDarkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)" 
+                       Color="Color.Inherit" 
+                       OnClick="@AppStateService.ToggleDarkMode" />
+    </MudAppBar>
+    
+    <MudDrawer @bind-Open="AppStateService.IsDrawerOpen"
+               ClipMode="DrawerClipMode.Always"
+               Elevation="2"
+               Variant="@DrawerVariant.Responsive"
+               OpenMiniOnHover="false">
+        
+        <NavMenu/>
 
-    <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
-        </div>
+        <MudSpacer/>
+        @if (AppStateService.IsDrawerOpen)
+        {
+            <div class="pa-4">
+                <MudDivider Class="mb-4"/>
+                <MudText Color="Color.Secondary" Typo="Typo.caption" Class="text-center text-muted">
+                    Syncro v0.1
+                </MudText>
+                <MudText Color="Color.Secondary" Typo="Typo.caption" Class="text-center text-muted">
+                    © 2026
+                </MudText>
+            </div>
+        }
 
-        <article class="content px-4">
-            @Body
-        </article>
-    </main>
-</div>
+    </MudDrawer>
+    
+    <MudMainContent Class="pa-4">
+        <MudContainer MaxWidth="MaxWidth.False" Class="pa-5">
+            <div class="content-wrapper">
+                @Body
+            </div>
+        </MudContainer>
+    </MudMainContent>
+    
+</MudLayout>
+
+@code
+{
+    private readonly MudTheme _theme = new()
+    {
+        PaletteLight = new PaletteLight()
+        {
+            Primary = "#0f766e",              // Teal 700 (weg vom Lila!)
+            PrimaryContrastText = "#ffffff",
+
+            Secondary = "#2563eb",            // klares Blau
+            SecondaryContrastText = "#ffffff",
+
+            Success = "#16a34a",
+            Info = "#0284c7",
+            Warning = "#d97706",
+            Error = "#dc2626",
+
+            Dark = "#0f172a",
+
+            TextPrimary = "#0f172a",          // sehr gut lesbar
+            TextSecondary = "#475569",        // stärker als vorher
+
+            Background = "#f1f5f9",           // leicht grauer → weniger Blendung
+            Surface = "#ffffff",
+
+            DrawerBackground = "#ffffff",
+            DrawerText = "#1e293b",
+
+            AppbarBackground = "#ffffff",     // bewusst neutral!
+            AppbarText = "#0f172a"
+        },
+
+        PaletteDark = new PaletteDark()
+        {
+            Primary = "#2dd4bf",              // helles Teal
+            PrimaryContrastText = "#042f2e",
+
+            Secondary = "#60a5fa",
+            SecondaryContrastText = "#0b1220",
+
+            Success = "#4ade80",
+            Info = "#38bdf8",
+            Warning = "#fbbf24",
+            Error = "#f87171",
+
+            Dark = "#020617",
+
+            TextPrimary = "#e5e7eb",
+            TextSecondary = "#cbd5f5",        // deutlich sichtbarer als vorher
+
+            Background = "#0b1220",           // weniger blau → ruhiger
+            Surface = "#111827",
+
+            DrawerBackground = "#111827",
+            DrawerText = "#e2e8f0",
+
+            AppbarBackground = "#111827",
+            AppbarText = "#e5e7eb"
+        },
+        Typography = new Typography()
+        {
+            Default = new DefaultTypography()
+            {
+                FontFamily = new[] { "Roboto", "Helvetica", "Arial", "sans-serif" }
+            },
+            H4 = new H4Typography()
+            {
+                FontWeight = "600"
+            },
+            H5 = new H5Typography()
+            {
+                FontWeight = "500"
+            },
+            H6 = new H6Typography()
+            {
+                FontWeight = "500"
+            }
+        },
+        Shadows = new Shadow(),
+        ZIndex = new ZIndex()
+    };
+
+}
