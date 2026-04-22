@@ -35,7 +35,7 @@ public partial class Calendar : ComponentBase
 
     private async Task OpenEventDetail(CalendarEvent ev)
     {
-        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseButton = true };
+        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseButton = true, CloseOnEscapeKey = true};
         var parameters = new DialogParameters<CalendarDetailsDialog>()
         {
             {x => x.Categories, _categories},
@@ -53,7 +53,7 @@ public partial class Calendar : ComponentBase
 
     private async Task OpenAddDialog()
     {
-        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseButton = true };
+        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, CloseButton = true, CloseOnEscapeKey = true};
         var parameters = new DialogParameters<CalendarAddDialog>()
         {
             {x => x.Categories, _categories},
