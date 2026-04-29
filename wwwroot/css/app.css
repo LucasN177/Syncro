@@ -113,3 +113,15 @@ code {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
     text-align: start;
 }
+
+.column-drop-zone {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 200px;
+    padding: 12px;
+}
+
+.column-drop-zone > div {
+    height: 100%;
+}
+

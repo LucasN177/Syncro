@@ -12,4 +12,5 @@ public class Issue
     public int CommentCount { get; set; }
     public bool HasAttachment { get; set; }
     public string DueDate { get; set; } = "";
+    public string ColumnId { get; set; } = "";
 }

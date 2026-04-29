@@ -1,4 +1,5 @@
 using MudBlazor;
+using Syncro.Core.Models.Enums;
 
 namespace Syncro.Core.Models;
 
@@ -15,4 +16,5 @@ public class KanbanCard
     public int CommentCount { get; set; }
     public bool HasAttachment { get; set; }
     public string DueDate { get; set; } = "";
+    public Column Column { get; set; }
 }
