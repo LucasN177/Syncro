@@ -32,8 +32,10 @@ builder.Services.AddSingleton<Client>(provider =>
     )
 );
 builder.Services.AddSingleton<IAuthRepository, AuthRepository>();
+builder.Services.AddSingleton<IProjectRepository, ProjectRepository>();
 
 builder.Services.AddSingleton<AppStateService>();
 builder.Services.AddSingleton<IAuthService, AuthService>();
+builder.Services.AddSingleton<IProjectService, ProjectService>();
 
 await builder.Build().RunAsync();

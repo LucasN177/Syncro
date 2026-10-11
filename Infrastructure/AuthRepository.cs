@@ -11,20 +11,41 @@ public class AuthRepository(Supabase.Client client): IAuthRepository
 {
     public async Task<IResponse<Session>> Login(string username, string password)
     {
-        var result = await client.Auth.SignInWithPassword(username, password);
-        return result is not null ? Response<Session>.Success(result) : Response<Session>.Failure("Login failed");
+        try
+        {
+            var result = await client.Auth.SignInWithPassword(username, password);
+            return result is not null ? Response<Session>.Success(result) : Response<Session>.Failure("Login failed");
+        }
+        catch (Exception exception)
+        {
+            return Response<Session>.Failure(exception.Message);
+        }
     }
 
     public async Task<IResponse<Session>> Register(string username, string password)
     {
-        var result = await client.Auth.SignUp(username, password);
-        return result is not null ? Response<Session>.Success(result) : Response<Session>.Failure("Registration failed");
+        try
+        {
+            var result = await client.Auth.SignUp(username, password);
+            return result is not null ? Response<Session>.Success(result) : Response<Session>.Failure("Registration failed");
+        }
+        catch (Exception exception)
+        {
+            return Response<Session>.Failure(exception.Message);
+        }
     }
 
     public async Task<IResponse> Logout()
     {
-        await client.Auth.SignOut();
-        return Response.Success();
+        try
+        {
+            await client.Auth.SignOut();
+            return Response.Success();
+        }
+        catch (Exception exception)
+        {
+            return Response.Failure(exception.Message, exception);
+        }
     }
 
     public Task<IResponse<Session>> GetCurrentSession()

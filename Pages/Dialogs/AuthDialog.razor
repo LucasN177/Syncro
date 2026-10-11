@@ -1,0 +1,53 @@
+<MudDialog>
+    <DialogContent>
+        <MudStack Spacing="4" Class="px-2 pt-2">
+            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                <MudAvatar Size="Size.Large" Color="Color.Primary" Style="font-weight: 800;">S</MudAvatar>
+                <MudStack Spacing="0">
+                    <MudText Typo="Typo.h5" Style="font-weight: 800; letter-spacing: -0.5px;">
+                        @(_isRegistering ? "Account erstellen" : "Willkommen zurück")
+                    </MudText>
+                    <MudText Typo="Typo.body2" Color="Color.Secondary">
+                        @(_isRegistering ? "Starte mit deinem Syncro-Workspace." : "Melde dich bei deinem Workspace an.")
+                    </MudText>
+                </MudStack>
+            </MudStack>
+
+            @if (!string.IsNullOrWhiteSpace(_errorMessage))
+            {
+                <MudAlert Severity="Severity.Error" Dense="true" Variant="Variant.Outlined">@_errorMessage</MudAlert>
+            }
+
+            <MudTextField @bind-Value="_email" Label="E-Mail-Adresse" Variant="Variant.Outlined" Required="true"
+                          InputType="InputType.Email" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Outlined.Email" />
+            <MudTextField @bind-Value="_password" Label="Passwort" Variant="Variant.Outlined" Required="true"
+                          InputType="@(_showPassword ? InputType.Text : InputType.Password)"
+                          Adornment="Adornment.End"
+                          AdornmentIcon="@(_showPassword ? Icons.Material.Filled.VisibilityOff : Icons.Material.Filled.Visibility)"
+                          OnAdornmentClick="@(() => _showPassword = !_showPassword)" />
+
+            @if (_isRegistering)
+            {
+                <MudTextField @bind-Value="_confirmPassword" Label="Passwort wiederholen" Variant="Variant.Outlined" Required="true"
+                              InputType="@(_showPassword ? InputType.Text : InputType.Password)"
+                              Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Outlined.Lock" />
+            }
+
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" Size="Size.Large"
+                       Disabled="@_isSubmitting" OnClick="SubmitAsync" Style="border-radius: 10px; font-weight: 750;">
+                @(_isSubmitting ? "Bitte warten …" : _isRegistering ? "Account erstellen" : "Anmelden")
+            </MudButton>
+
+            <MudText Typo="Typo.body2" Align="Align.Center" Color="Color.Secondary">
+                @if (_isRegistering)
+                {
+                    <span>Schon registriert? </span><MudLink OnClick="ToggleMode" Style="font-weight: 700; cursor: pointer;">Anmelden</MudLink>
+                }
+                else
+                {
+                    <span>Noch kein Account? </span><MudLink OnClick="ToggleMode" Style="font-weight: 700; cursor: pointer;">Jetzt registrieren</MudLink>
+                }
+            </MudText>
+        </MudStack>
+    </DialogContent>
+</MudDialog>

@@ -1,4 +1,8 @@
 ﻿@page "/"
+@using Syncro.Core.Interfaces.Services
+@using Syncro.Pages.Dialogs
+@inject IAuthService AuthService
+@inject IDialogService DialogService
 
 <MudContainer MaxWidth="MaxWidth.False" Class="pa-6" Style="min-height: 100vh; background: #F8FAFC;">
     
@@ -6,7 +10,7 @@
         <MudStack Spacing="0">
             <MudText Typo="Typo.h4" Style="font-weight: 800; letter-spacing: -1px;">Dashboard</MudText>
             <MudText Typo="Typo.body2" Color="Color.Secondary">
-                Welcome back, Lucas · @DateTime.Today.ToString("dddd, MMMM d")
+                @(_isAuthenticated ? $"Willkommen zurück, {DisplayName}" : "Dein zentraler Überblick für Projekte und Aufgaben") · @DateTime.Today.ToString("dddd, dd. MMMM")
             </MudText>
         </MudStack>
         <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
@@ -21,6 +25,38 @@
             </MudButton>
         </MudStack>
     </MudStack>
+
+    <MudPaper Elevation="0" Class="pa-5 mb-6"
+              Style="border-radius: 16px; background: linear-gradient(120deg, #0f766e 0%, #0f5f70 55%, #2563eb 100%); color: white; overflow: hidden;">
+        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Style="flex-wrap: wrap; gap: 20px;">
+            <MudStack Spacing="1">
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                    <MudAvatar Color="Color.Default" Style="background: rgba(255,255,255,.18); color: white; font-weight: 800;">
+                        @(_isAuthenticated ? UserInitials : "S")
+                    </MudAvatar>
+                    <MudText Typo="Typo.h5" Style="font-weight: 800;">
+                        @(_isAuthenticated ? $"Schön, dass du da bist, {DisplayName}." : "Willkommen bei Syncro.")
+                    </MudText>
+                </MudStack>
+                <MudText Typo="Typo.body2" Style="color: rgba(255,255,255,.82); max-width: 620px;">
+                    @(_isAuthenticated ? "Dein Workspace ist bereit. Behalte Projekte, Aufgaben und dein Team im Blick." : "Melde dich an, um deine Projekte sicher mit deinem persönlichen Workspace zu synchronisieren.")
+                </MudText>
+            </MudStack>
+            @if (!_isAuthenticated)
+            {
+                <MudStack Row="true" Spacing="2">
+                    <MudButton Variant="Variant.Filled" Color="Color.Default" OnClick="@(() => OpenAuthDialogAsync(false))"
+                               Style="background: white; color: #0f766e; border-radius: 10px; font-weight: 750;">
+                        Anmelden
+                    </MudButton>
+                    <MudButton Variant="Variant.Outlined" Color="Color.Inherit" OnClick="@(() => OpenAuthDialogAsync(true))"
+                               Style="border-color: rgba(255,255,255,.65); color: white; border-radius: 10px; font-weight: 750;">
+                        Registrieren
+                    </MudButton>
+                </MudStack>
+            }
+        </MudStack>
+    </MudPaper>
     
     <MudGrid Spacing="4" Class="mb-6">
         @foreach (var kpi in _kpis)
@@ -283,6 +319,32 @@
 </MudContainer>
 
 @code {
+
+    private bool _isAuthenticated => AuthService.CurrentUser is not null;
+
+    private string DisplayName => AuthService.CurrentUser?.Email?.Split('@')[0] ?? "bei Syncro";
+
+    private string UserInitials => string.Concat(DisplayName.Split('.', StringSplitOptions.RemoveEmptyEntries)
+        .Take(2)
+        .Select(part => char.ToUpperInvariant(part[0])));
+
+    protected override async Task OnInitializedAsync()
+    {
+        var session = await AuthService.GetCurrentSession();
+        if (session.IsSuccess)
+            await AuthService.GetCurrentUser();
+    }
+
+    private async Task OpenAuthDialogAsync(bool register)
+    {
+        var options = new DialogOptions { MaxWidth = MaxWidth.ExtraSmall, FullWidth = true, CloseButton = true, CloseOnEscapeKey = true };
+        var parameters = new DialogParameters<AuthDialog> { { dialog => dialog.StartInRegistration, register } };
+        var dialog = await DialogService.ShowAsync<AuthDialog>(register ? "Registrieren" : "Anmelden", parameters, options);
+        await dialog.Result;
+        await AuthService.GetCurrentSession();
+        await AuthService.GetCurrentUser();
+        await InvokeAsync(StateHasChanged);
+    }
 
     // ── Temporäre lokale Models ──────────────────────────────────────────────
 

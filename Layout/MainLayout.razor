@@ -1,9 +1,12 @@
 ﻿@using Syncro.Core.Interfaces.Services
 @using Syncro.Services
+@using Syncro.Pages.Dialogs
 @inherits LayoutComponentBase
 @inject NavigationManager NavigationManager
 @inject AppStateService AppStateService
 @inject IAuthService AuthService
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
 
 
 @* Required *@
@@ -34,7 +37,27 @@
         </MudHidden>
         
         <MudSpacer />
-        
+
+        @if (AuthService.CurrentUser is not null)
+        {
+            <MudTooltip Text="@AuthService.CurrentUser.Email">
+                <MudAvatar Size="Size.Small" Color="Color.Primary" Class="mr-2" Style="font-size: 0.7rem; font-weight: 800;">
+                    @UserInitials
+                </MudAvatar>
+            </MudTooltip>
+            <MudButton Variant="Variant.Text" Size="Size.Small" Color="Color.Inherit" OnClick="LogoutAsync"
+                       Style="font-weight: 700; text-transform: none;">
+                Abmelden
+            </MudButton>
+        }
+        else
+        {
+            <MudButton Variant="Variant.Outlined" Size="Size.Small" Color="Color.Primary" OnClick="OpenLoginAsync"
+                       Style="border-radius: 8px; font-weight: 700; text-transform: none;">
+                Anmelden
+            </MudButton>
+        }
+
         <MudIconButton Icon="@(AppStateService.IsDarkMode ? Icons.Material.Filled.LightMode : Icons.Material.Filled.DarkMode)" 
                        Color="Color.Inherit" 
                        OnClick="@AppStateService.ToggleDarkMode" />
@@ -76,6 +99,41 @@
 
 @code
 {
+    private string UserInitials
+    {
+        get
+        {
+            var email = AuthService.CurrentUser?.Email ?? "?";
+            return string.Concat(email.Split('@')[0].Split('.', StringSplitOptions.RemoveEmptyEntries)
+                .Take(2)
+                .Select(part => char.ToUpperInvariant(part[0])));
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var session = await AuthService.GetCurrentSession();
+        if (session.IsSuccess)
+            await AuthService.GetCurrentUser();
+    }
+
+    private async Task OpenLoginAsync()
+    {
+        var options = new DialogOptions { MaxWidth = MaxWidth.ExtraSmall, FullWidth = true, CloseButton = true, CloseOnEscapeKey = true };
+        var dialog = await DialogService.ShowAsync<AuthDialog>("Anmelden", options);
+        await dialog.Result;
+        await AuthService.GetCurrentSession();
+        await AuthService.GetCurrentUser();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task LogoutAsync()
+    {
+        var result = await AuthService.Logout();
+        Snackbar.Add(result.IsSuccess ? "Du wurdest abgemeldet." : result.ErrorMessage ?? "Abmelden nicht möglich.",
+            result.IsSuccess ? Severity.Success : Severity.Error);
+    }
+
     private readonly MudTheme _theme = new()
     {
         PaletteLight = new PaletteLight()

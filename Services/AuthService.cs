@@ -21,6 +21,7 @@ public class AuthService(IAuthRepository authRepository) : IAuthService
             CurrentUser = result.Data;
             return Response<User?>.Success(result.Data);
         }
+        CurrentUser = null;
         return Response<User?>.Failure(result.ErrorMessage ?? "No current user");
     }
 
@@ -31,28 +32,43 @@ public class AuthService(IAuthRepository authRepository) : IAuthService
         {
             CurrentSession = result.Data;
             return Response<Session?>.Success(result.Data);
-        } 
+        }
+        CurrentSession = null;
+        CurrentUser = null;
         return Response<Session?>.Failure(result.ErrorMessage ?? "No current session");
     }
 
     public async Task<IResponse<Session>> Login(string username, string password)
     {
         var result =  await authRepository.Login(username, password);
-        return result is { IsSuccess: true, Data: not null } ? Response<Session>.Success(result.Data) : Response<Session>.Failure(result.ErrorMessage ?? "Login failed");
+        if (result is not { IsSuccess: true, Data: not null })
+            return Response<Session>.Failure(result.ErrorMessage ?? "Login failed");
+
+        CurrentSession = result.Data;
+        await GetCurrentUser();
+        return Response<Session>.Success(result.Data);
     }
 
     public async Task<IResponse<Session>> Register(string username, string password)
     {
         var result =  await authRepository.Register(username, password);
-        return result is { IsSuccess: true, Data: not null } ? Response<Session>.Success(result.Data) : Response<Session>.Failure(result.ErrorMessage ?? "Register failed.");
+        if (result is not { IsSuccess: true, Data: not null })
+            return Response<Session>.Failure(result.ErrorMessage ?? "Register failed.");
+
+        CurrentSession = result.Data;
+        await GetCurrentUser();
+        return Response<Session>.Success(result.Data);
     }
 
-    public Task<IResponse> Logout()
+    public async Task<IResponse> Logout()
     {
+        var result = await authRepository.Logout();
+        if (!result.IsSuccess)
+            return result;
+
         CurrentSession = null;
         CurrentUser = null;
-        authRepository.Logout();
-        return Task.FromResult(Response.Success());
+        return Response.Success();
     }
 
     public async Task<IResponse> InsertUserMetadata(UserDto user)
