@@ -5,43 +5,45 @@
 @using Syncro.FakeData
 @using Syncro.Layout.Helper
 
+
+
+<MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-6" Style="margin-top: 50px">
+    <MudStack Spacing="0">
+        <MudText Typo="Typo.h4" Style="font-weight: 800; letter-spacing: -1px;">Board</MudText>
+        <MudText Typo="Typo.body2" Color="Color.Secondary">
+            @_allCards.Count open issues · Sprint ends in 6 days
+        </MudText>
+    </MudStack>
+    <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+        <MudAvatarGroup Max="4" Spacing="2">
+            <MudTooltip Text="Lucas M."><MudAvatar Size="Size.Small" Color="Color.Primary"   Style="font-size:0.7rem;font-weight:700;">LM</MudAvatar></MudTooltip>
+            <MudTooltip Text="Anna K."> <MudAvatar Size="Size.Small" Color="Color.Secondary" Style="font-size:0.7rem;font-weight:700;">AK</MudAvatar></MudTooltip>
+            <MudTooltip Text="Tim R.">  <MudAvatar Size="Size.Small" Color="Color.Tertiary"  Style="font-size:0.7rem;font-weight:700;">TR</MudAvatar></MudTooltip>
+            <MudTooltip Text="Sara B."> <MudAvatar Size="Size.Small" Color="Color.Info"      Style="font-size:0.7rem;font-weight:700;">SB</MudAvatar></MudTooltip>
+        </MudAvatarGroup>
+        <MudChip T="string" Icon="@Icons.Material.Filled.Circle" IconColor="Color.Success"
+                 Size="Size.Small" Variant="Variant.Outlined">
+            Sprint 1 – Active
+        </MudChip>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.Add"
+                   Size="Size.Small"
+                   Style="border-radius: 10px; font-weight: 700;">
+            Add Issue
+        </MudButton>
+    </MudStack>
+</MudStack>
+
 <MudDropContainer T="KanbanCard"
                   Items="_allCards"
                   ItemsSelector="@((card, zoneId) => card.Column.MapColumnEnumToString() == zoneId)"
                   ItemDropped="CardDropped"
                   @ref="_dropContainer"
                   Class="pa-6 d-flex flex-column"
-                  Style="min-height: 100vh; background: #F8FAFC;">
+                  Style="min-height: 100vh;">
     <ChildContent>
 
-        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-6">
-            <MudStack Spacing="0">
-                <MudText Typo="Typo.h4" Style="font-weight: 800; letter-spacing: -1px;">Board</MudText>
-                <MudText Typo="Typo.body2" Color="Color.Secondary">
-                    @_allCards.Count open issues · Sprint ends in 6 days
-                </MudText>
-            </MudStack>
-            <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
-                <MudAvatarGroup Max="4" Spacing="2">
-                    <MudTooltip Text="Lucas M."><MudAvatar Size="Size.Small" Color="Color.Primary"   Style="font-size:0.7rem;font-weight:700;">LM</MudAvatar></MudTooltip>
-                    <MudTooltip Text="Anna K."> <MudAvatar Size="Size.Small" Color="Color.Secondary" Style="font-size:0.7rem;font-weight:700;">AK</MudAvatar></MudTooltip>
-                    <MudTooltip Text="Tim R.">  <MudAvatar Size="Size.Small" Color="Color.Tertiary"  Style="font-size:0.7rem;font-weight:700;">TR</MudAvatar></MudTooltip>
-                    <MudTooltip Text="Sara B."> <MudAvatar Size="Size.Small" Color="Color.Info"      Style="font-size:0.7rem;font-weight:700;">SB</MudAvatar></MudTooltip>
-                </MudAvatarGroup>
-                <MudChip T="string" Icon="@Icons.Material.Filled.Circle" IconColor="Color.Success"
-                         Size="Size.Small" Variant="Variant.Outlined">
-                    Sprint 1 – Active
-                </MudChip>
-                <MudButton Variant="Variant.Filled" Color="Color.Primary"
-                           StartIcon="@Icons.Material.Filled.Add"
-                           Size="Size.Small"
-                           Style="border-radius: 10px; font-weight: 700;">
-                    Add Issue
-                </MudButton>
-            </MudStack>
-        </MudStack>
-
-        <MudGrid Spacing="4" Style="flex: 1; align-items: stretch;">
+<MudGrid Spacing="4" Style="flex: 1; align-items: stretch;">
             @foreach (var column in _columns)
             {
                 <MudItem xs="12" sm="6" lg="3" Style="display: flex; flex-direction: column;">
