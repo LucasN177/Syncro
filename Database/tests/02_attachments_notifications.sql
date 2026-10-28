@@ -2,6 +2,8 @@
 
 \set ON_ERROR_STOP 1
 \set QUIET 1
+-- Syncro-Tabellen liegen im Schema syncro
+set search_path = syncro, public;
 insert into auth.users values
  ('aaaaaaaa-0000-0000-0000-000000000000','anna@example.test'),
  ('bbbbbbbb-0000-0000-0000-000000000000','ben.k+dev@example.test'),
@@ -19,7 +21,7 @@ create table public.t_ids (name text primary key, id uuid);
 grant all on public.t_ids to authenticated;
 
 select t_assert((select count(*) from pg_publication_tables where pubname='supabase_realtime' and tablename in ('issues','notifications')) = 2, 'Realtime-Publikation enthaelt issues und notifications');
-select t_assert((select public from storage.buckets where id='attachments') = false, 'Privater Bucket attachments angelegt');
+select t_assert((select public from storage.buckets where id='syncro-attachments') = false, 'Privater Bucket syncro-attachments angelegt');
 
 set role authenticated;
 -- Anna legt Projekt an, Ben member, Cara viewer
@@ -45,12 +47,12 @@ select t_assert((select string_agg(type, ',' order by created_at, type) from not
 select t_fails($q$insert into notifications(user_id,type,message) values ('cccccccc-0000-0000-0000-000000000000','assigned','x')$q$, 'Client kann keine Benachrichtigungen anlegen');
 -- Viewer darf keine Anhaenge
 select t_fails($q$insert into issue_attachments(issue_id,file_name,storage_path) select i.id,'a.txt',p.id||'/'||i.id||'/a.txt' from t_ids i, t_ids p where i.name='issue' and p.name='proj'$q$, 'Viewer kann keinen Anhang anlegen');
-select t_fails($q$insert into storage.objects(bucket_id,name) select 'attachments', id||'/x/a.txt' from t_ids where name='proj'$q$, 'Viewer kann nicht hochladen');
+select t_fails($q$insert into storage.objects(bucket_id,name) select 'syncro-attachments', id||'/x/a.txt' from t_ids where name='proj'$q$, 'Viewer kann nicht hochladen');
 
 select set_config('request.jwt.claim.sub','aaaaaaaa-0000-0000-0000-000000000000',false);
 select t_assert((select string_agg(type, ',') from notifications) = 'commented', 'Anna: Kommentar zu ihrem Issue');
 select t_fails($q$insert into issue_attachments(issue_id,file_name,storage_path) select id,'a.txt','falsch/a.txt' from t_ids where name='issue'$q$, 'Falscher Pfad wird abgelehnt');
-insert into storage.objects(bucket_id,name) select 'attachments', p.id||'/'||i.id||'/plan.pdf' from t_ids i, t_ids p where i.name='issue' and p.name='proj';
+insert into storage.objects(bucket_id,name) select 'syncro-attachments', p.id||'/'||i.id||'/plan.pdf' from t_ids i, t_ids p where i.name='issue' and p.name='proj';
 insert into issue_attachments(issue_id,file_name,storage_path,size_bytes,project_id) select i.id,'plan.pdf',p.id||'/'||i.id||'/plan.pdf',1234,'dddddddd-0000-0000-0000-000000000000' from t_ids i, t_ids p where i.name='issue' and p.name='proj';
 select t_assert((select project_id from issue_attachments) = (select id from t_ids where name='proj') and (select uploaded_by from issue_attachments) = auth.uid(), 'project_id und uploaded_by erzwungen');
 select t_assert((select attachment_count from issues) = 1, 'attachment_count per Trigger');
@@ -59,7 +61,7 @@ select t_assert((select attachment_count from issues) = 1, 'attachment_count nic
 
 select set_config('request.jwt.claim.sub','dddddddd-0000-0000-0000-000000000000',false);
 select t_assert((select count(*) from storage.objects) = 0 and (select count(*) from issue_attachments) = 0, 'Aussenstehende sehen keine Anhaenge');
-select t_fails($q$insert into storage.objects(bucket_id,name) values ('attachments','kein-uuid/a.txt')$q$, 'Ungueltiger Pfad im Storage abgelehnt');
+select t_fails($q$insert into storage.objects(bucket_id,name) values ('syncro-attachments','kein-uuid/a.txt')$q$, 'Ungueltiger Pfad im Storage abgelehnt');
 
 select set_config('request.jwt.claim.sub','cccccccc-0000-0000-0000-000000000000',false);
 select t_assert((select count(*) from storage.objects) = 1 and (select count(*) from issue_attachments) = 1, 'Viewer kann Anhaenge sehen');

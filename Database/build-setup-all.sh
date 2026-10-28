@@ -14,8 +14,9 @@ TARGET="${1:-setup_all.sql}"
     echo "-- Generiert aus den Migrationen 000–010 mit build-setup-all.sh."
     echo "-- Nicht von Hand bearbeiten: Änderungen in den Einzeldateien machen und neu generieren."
     echo "--"
-    echo "-- Im Supabase SQL-Editor komplett ausführen. Das Skript ist idempotent und"
-    echo "-- übernimmt auch eine Datenbank, in der die frühere projects.sql lief."
+    echo "-- Vorher im Dashboard unter Project Settings → Data API das Schema syncro freigeben."
+    echo "-- Dann im Supabase SQL-Editor komplett ausführen. Das Skript ist idempotent und legt"
+    echo "-- alles im eigenen Schema syncro an; andere Apps im Schema public bleiben unberührt."
     echo "-- ============================================================================"
     for migration in 0*.sql; do
         echo

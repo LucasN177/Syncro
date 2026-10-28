@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using Supabase.Realtime;
 using Supabase.Realtime.PostgresChanges;
+using Syncro.Core.Constants;
 using Syncro.Core.Interfaces.Infrastructure;
 using static Supabase.Realtime.PostgresChanges.PostgresChangesOptions;
 
@@ -20,7 +21,7 @@ public class RealtimeRepository(Supabase.Client client, ILogger<RealtimeReposito
                 await client.Realtime.ConnectAsync();
 
             var channel = client.Realtime.Channel($"syncro:{table}:{Guid.NewGuid():N}");
-            channel.Register(new PostgresChangesOptions("public", table, ListenType.All, filter));
+            channel.Register(new PostgresChangesOptions(SyncroDatabase.Schema, table, ListenType.All, filter));
             channel.AddPostgresChangeHandler(ListenType.All, (_, _) => onChange());
             await channel.Subscribe();
 

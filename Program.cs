@@ -5,6 +5,7 @@ using Microsoft.JSInterop;
 using MudBlazor.Services;
 using Supabase;
 using Syncro;
+using Syncro.Core.Constants;
 using Syncro.Core.Interfaces.Infrastructure;
 using Syncro.Core.Interfaces.Services;
 using Syncro.Infrastructure;
@@ -28,6 +29,8 @@ builder.Services.AddSingleton<Client>(provider =>
         {
             AutoRefreshToken = true,
             AutoConnectRealtime = true,
+            // Syncro-Tabellen liegen im eigenen Schema, siehe Database/000_preflight.sql
+            Schema = SyncroDatabase.Schema,
             SessionHandler = new LocalStorageSessionPersistence((IJSInProcessRuntime)provider.GetRequiredService<IJSRuntime>())
         }
     )

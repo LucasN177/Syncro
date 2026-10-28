@@ -1,8 +1,22 @@
 # Datenbank
 
-**Am einfachsten:** `setup_all.sql` komplett im Supabase SQL-Editor ausführen. Die Datei enthält alle Migrationen 000–010 in der richtigen Reihenfolge.
+Syncro liegt komplett im eigenen Schema **`syncro`**. So kann es sich ein Supabase-Projekt mit anderen Apps teilen (z. B. Monexa im Schema `public`), ohne dass sich Tabellen, Funktionen oder Policies überschneiden. Außerhalb von `syncro` legt Syncro nur eindeutig benannte Objekte an: die Trigger `syncro_on_auth_user_created` und `syncro_on_auth_user_email_changed` auf `auth.users`, den Bucket `syncro-attachments` und Storage-Policies mit dem Präfix „Syncro:“.
 
-Alternativ lassen sich die Einzeldateien **in Reihenfolge** ausführen. Jede Datei ist idempotent und kann erneut ausgeführt werden. `002_projects.sql` läuft auch auf einer Datenbank, in der die frühere `projects.sql` bereits angelegt wurde. Ungültige Altdaten werden dabei bereinigt: Ein zu kurzes Kürzel wird ergänzt, ein unbekannter Status wird zu `Aktiv` und eine ungültige Farbe zu `#0f766e`.
+## Einrichten
+
+1. Im Supabase-Dashboard unter **Project Settings → Data API → Exposed schemas** den Eintrag `syncro` ergänzen. Ohne diesen Schritt kann die App nicht auf ihre Tabellen zugreifen.
+2. `setup_all.sql` komplett im SQL-Editor ausführen. Die Datei enthält alle Migrationen 000–010 in der richtigen Reihenfolge.
+
+Alternativ lassen sich die Einzeldateien **in Reihenfolge** ausführen. Jede Datei ist idempotent und kann erneut ausgeführt werden.
+
+## Aufräumen nach einer früheren Version in `public`
+
+Frühere Syncro-Versionen lagen im Schema `public` und haben sich dort mit Monexa überschnitten (`projects`, `project_members`, `project_role`). Zum Bereinigen im SQL-Editor nacheinander ausführen:
+
+1. `maintenance/remove_syncro_from_public.sql`: Entfernt nur Syncro-Objekte aus `public`. Tabellen und Funktionen werden nur gelöscht, wenn ihre Spalten bzw. ihre Signatur eindeutig zu Syncro passen. Gibt es in `public` noch Syncro-Daten (Projekte, Issues, Termine), bricht das Skript ab und nennt sie.
+2. Monexas `database/setup_all.sql`: Stellt `project_members`, `project_role` und alle Policies wieder her.
+3. `maintenance/restore_monexa_owners.sql`: Trägt jeden Projekteigentümer wieder als Admin in Monexas `project_members` ein. Weitere Mitglieder und offene Einladungen lassen sich nur aus einem Backup zurückholen.
+4. `setup_all.sql` von Syncro, wie unter „Einrichten“ beschrieben.
 
 `setup_all.sql` wird aus den Einzeldateien erzeugt und nicht von Hand bearbeitet. Nach Änderungen an einer Migration neu generieren:
 
@@ -12,7 +26,7 @@ bash Database/build-setup-all.sh
 
 | Datei | Inhalt |
 |---|---|
-| `000_preflight.sql` | Vorabprüfung bei Resten eines früheren Setups: entfernt abweichende gleichnamige Funktionen und meldet unpassende Tabellen mit allen Abweichungen auf einmal (löscht keine Daten) |
+| `000_preflight.sql` | legt das Schema `syncro` mit Rechten für die Supabase-Rollen an; Vorabprüfung: entfernt abweichende gleichnamige Funktionen und meldet unpassende Tabellen mit allen Abweichungen auf einmal (löscht keine Daten) |
 | `001_profiles.sql` | `profiles` je Auth-Nutzer, wird beim Sign-up per Trigger angelegt |
 | `002_projects.sql` | `projects` mit Key (z. B. `SYN`), Issue-Zähler und Status-Prüfung |
 | `003_project_members.sql` | `project_members` mit Rollen `admin`/`member`/`viewer`, Hilfsfunktionen und alle Projekt-Policies |
@@ -20,11 +34,10 @@ bash Database/build-setup-all.sh
 | `005_issue_comments.sql` | `issue_comments`, pflegt `issues.comment_count` |
 | `006_events.sql` | `events` und `event_attendees` für den Kalender |
 | `007_activity_log.sql` | `activity_log`, wird per Trigger befüllt |
-| `008_attachments.sql` | `issue_attachments`, privater Storage-Bucket `attachments` (max. 10 MB je Datei) mit Policies |
+| `008_attachments.sql` | `issue_attachments`, privater Storage-Bucket `syncro-attachments` (max. 10 MB je Datei) mit Policies |
 | `009_notifications.sql` | `notifications` bei Zuweisung, Kommentar, `@username`-Erwähnung und Projekteinladung |
-| `010_realtime.sql` | nimmt `issues` und `notifications` in die Realtime-Publikation auf |
+| `010_realtime.sql` | nimmt `issues` und `notifications` in die Realtime-Publikation auf, zieht Rechte nach |
 
-`004_issues.sql` wurde für die Anhänge um die Spalte `attachment_count` erweitert. Wer 004 schon früher ausgeführt hat, führt die Datei vor 008 einfach erneut aus.
 
 Dateien im Storage liegen unter `{project_id}/{issue_id}/{dateiname}`. Wird ein Issue oder Projekt gelöscht, verschwinden die Einträge in `issue_attachments`, die Dateien selbst bleiben aber im Bucket liegen. Supabase empfiehlt, Storage-Dateien nicht per SQL zu löschen.
 
@@ -61,6 +74,7 @@ Um Nutzer einzuladen, sucht `rpc('find_profile_by_email', { p_email })` das pass
 - dass alle Migrationen zweimal hintereinander fehlerfrei laufen,
 - dass `000` jede Funktion abdeckt: zu jeder Funktion wird vorher eine abweichende Variante angelegt,
 - die Rechte und Trigger mit vier Testnutzern (`01_core.sql`, `02_attachments_notifications.sql`).
+- mit Monexa im Nachbarordner `../monexa`: dass Syncro neben Monexa nichts an deren Objekten ändert und dass die Aufräumskripte Monexa nach dem alten Setup wiederherstellen. Der Pfad lässt sich mit `MONEXA_SETUP_ALL` setzen; fehlt die Datei, werden diese Szenarien übersprungen.
 
 ```bash
 bash Database/tests/run-tests.sh

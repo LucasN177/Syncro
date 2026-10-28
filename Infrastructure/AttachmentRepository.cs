@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using Syncro.Core.Constants;
 using Syncro.Core.Interfaces.Infrastructure;
 using Syncro.Core.Interfaces.Response;
 using Syncro.Core.Models;
@@ -9,7 +10,7 @@ namespace Syncro.Infrastructure;
 
 public class AttachmentRepository(Supabase.Client client) : IAttachmentRepository
 {
-    private const string Bucket = "attachments";
+    private const string Bucket = SyncroDatabase.AttachmentsBucket;
 
     public async Task<IResponse<IReadOnlyList<AttachmentDto>>> GetAttachments(Guid issueId)
     {

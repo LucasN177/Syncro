@@ -1,5 +1,18 @@
--- 000: Vorabprüfung für Datenbanken mit Resten eines früheren Setups
+-- 000: Schema syncro anlegen und vorab prüfen
 --
+-- Syncro liegt komplett im eigenen Schema "syncro", damit es sich die Datenbank mit anderen
+-- Apps (z. B. Monexa im Schema public) teilen kann, ohne Tabellen oder Funktionen zu überschneiden.
+-- Damit die App über die Supabase-API zugreifen kann, muss "syncro" im Dashboard unter
+-- Project Settings → Data API → Exposed schemas eingetragen sein.
+
+create schema if not exists syncro;
+
+grant usage on schema syncro to anon, authenticated, service_role;
+
+-- Rechte für alle Objekte, die die folgenden Migrationen anlegen; RLS regelt den Zugriff im Detail
+alter default privileges in schema syncro grant all on tables to anon, authenticated, service_role;
+alter default privileges in schema syncro grant all on sequences to anon, authenticated, service_role;
+
 -- Teil 1: Gleichnamige Funktionen entfernen, die abweichen
 -- "create or replace function" kann Rückgabetyp und Parameternamen einer bestehenden Funktion
 -- nicht ändern (Fehler 42P13). Existiert eine Funktion mit demselben Namen und denselben
@@ -70,7 +83,7 @@ begin
                    pg_get_function_arguments(p.oid) as args,
                    pg_get_function_result(p.oid) as result
             from pg_proc p
-            where p.pronamespace = 'public'::regnamespace
+            where p.pronamespace = 'syncro'::regnamespace
               and p.proname = v_expected.name
               and oidvectortypes(p.proargtypes) = v_expected.arg_types
         loop
@@ -183,7 +196,7 @@ begin
         existing_tables as (
             select distinct e.table_name
             from expected e
-            join information_schema.tables t on t.table_schema = 'public' and t.table_name = e.table_name
+            join information_schema.tables t on t.table_schema = 'syncro' and t.table_name = e.table_name
         )
         -- Spalten, die fehlen oder einen anderen Typ haben
         select e.table_name,
@@ -192,7 +205,7 @@ begin
         from expected e
         join existing_tables using (table_name)
         left join information_schema.columns c
-            on c.table_schema = 'public' and c.table_name = e.table_name and c.column_name = e.column_name
+            on c.table_schema = 'syncro' and c.table_name = e.table_name and c.column_name = e.column_name
         where c.data_type is distinct from e.data_type
           and not (e.added_by_migration and c.data_type is null)
         union all
@@ -201,7 +214,7 @@ begin
                format('%s.%s: zusätzliche Pflichtspalte ohne Standardwert', c.table_name, c.column_name)
         from information_schema.columns c
         join existing_tables et on et.table_name = c.table_name
-        where c.table_schema = 'public'
+        where c.table_schema = 'syncro'
           and c.is_nullable = 'NO' and c.column_default is null
           and c.is_identity = 'NO' and c.is_generated = 'NEVER'
           and not exists (select 1 from expected e where e.table_name = c.table_name and e.column_name = c.column_name)
@@ -219,7 +232,7 @@ begin
             message = format(E'Folgende Tabellen stammen aus einem früheren Setup und passen nicht zu Syncro: %s\nAbweichungen:%s',
                              array_to_string(v_tables, ', '), v_problems),
             hint = format('Werden die Daten darin nicht mehr gebraucht, die Tabellen löschen und das Skript erneut ausführen: drop table if exists %s cascade;',
-                          (select string_agg('public.' || quote_ident(t), ', ') from unnest(v_tables) t));
+                          (select string_agg('syncro.' || quote_ident(t), ', ') from unnest(v_tables) t));
     end if;
 end;
 $$;

@@ -3,6 +3,8 @@
 
 \set ON_ERROR_STOP 1
 \set QUIET 1
+-- Syncro-Tabellen liegen im Schema syncro
+set search_path = syncro, public;
 insert into auth.users values
  ('aaaaaaaa-0000-0000-0000-000000000000','anna@example.test'),
  ('bbbbbbbb-0000-0000-0000-000000000000','ben@example.test'),

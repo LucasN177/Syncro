@@ -9,16 +9,21 @@ begin
     if not exists (select 1 from pg_roles where rolname = 'authenticated') then
         create role authenticated nologin;
     end if;
+    if not exists (select 1 from pg_roles where rolname = 'service_role') then
+        create role service_role nologin bypassrls;
+    end if;
 end;
 $$;
 
--- auth: Nutzer und auth.uid() aus der gesetzten JWT-Claim
+-- auth: Nutzer, auth.uid() aus der gesetzten JWT-Claim und auth.jwt() mit sub und email
 create schema auth;
 create table auth.users (id uuid primary key, email text);
 create function auth.uid() returns uuid language sql stable as
 $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
+create function auth.jwt() returns jsonb language sql stable security definer as
+$$ select jsonb_build_object('sub', auth.uid(), 'email', (select email from auth.users where id = auth.uid())) $$;
 grant usage on schema auth to authenticated, anon;
-grant execute on function auth.uid() to authenticated, anon;
+grant execute on function auth.uid(), auth.jwt() to authenticated, anon;
 
 -- In Supabase haben anon und authenticated Rechte auf public; RLS regelt den Rest
 alter default privileges in schema public grant all on tables to anon, authenticated;

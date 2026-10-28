@@ -20,7 +20,7 @@ public class AttachmentDto : BaseModel
     [Column("file_name")]
     public string FileName { get; set; } = string.Empty;
 
-    /// <summary>Pfad im Bucket "attachments": {project_id}/{issue_id}/{datei}.</summary>
+    /// <summary>Pfad im Bucket "syncro-attachments": {project_id}/{issue_id}/{datei}.</summary>
     [Column("storage_path")]
     public string StoragePath { get; set; } = string.Empty;
 
