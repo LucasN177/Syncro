@@ -42,6 +42,7 @@
 
         @if (AuthService.IsAuthenticated)
         {
+            <NotificationBell />
             <MudTooltip Text="@AuthService.DisplayName">
                 <MudAvatar Size="Size.Small" Color="Color.Primary" Class="mr-2" Style="font-size: 0.7rem; font-weight: 800;">
                     @UserInitials

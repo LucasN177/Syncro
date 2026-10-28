@@ -9,9 +9,15 @@ using Syncro.Core.Models.Enums;
 
 namespace Syncro.Services;
 
-public class IssueService(IIssueRepository issueRepository, ICommentRepository commentRepository) : IIssueService
+public class IssueService(
+    IIssueRepository issueRepository,
+    ICommentRepository commentRepository,
+    IAttachmentRepository attachmentRepository) : IIssueService
 {
     private const double PositionStep = 1024;
+
+    /// <summary>Entspricht file_size_limit des Buckets in 008_attachments.sql.</summary>
+    public const long MaxAttachmentBytes = 10 * 1024 * 1024;
 
     public Task<IResponse<IReadOnlyList<IssueDto>>> GetIssues(Guid projectId) => issueRepository.GetIssues(projectId);
 
@@ -89,4 +95,26 @@ public class IssueService(IIssueRepository issueRepository, ICommentRepository c
     }
 
     public Task<IResponse> DeleteComment(Guid id) => commentRepository.DeleteComment(id);
+
+    public Task<IResponse<IReadOnlyList<AttachmentDto>>> GetAttachments(Guid issueId) =>
+        attachmentRepository.GetAttachments(issueId);
+
+    public async Task<IResponse<AttachmentDto>> AddAttachment(IssueDto issue, string fileName, string? contentType, byte[] content)
+    {
+        if (issue.Id == Guid.Empty)
+            return Response<AttachmentDto>.Failure("Bitte speichere das Issue, bevor du Dateien anhängst.");
+
+        if (content.LongLength == 0)
+            return Response<AttachmentDto>.Failure("Die Datei ist leer.");
+
+        if (content.LongLength > MaxAttachmentBytes)
+            return Response<AttachmentDto>.Failure("Dateien dürfen höchstens 10 MB groß sein.");
+
+        return await attachmentRepository.Upload(issue.ProjectId, issue.Id, fileName, contentType, content);
+    }
+
+    public Task<IResponse<string>> GetAttachmentUrl(AttachmentDto attachment) =>
+        attachmentRepository.CreateDownloadUrl(attachment.StoragePath, 60);
+
+    public Task<IResponse> DeleteAttachment(AttachmentDto attachment) => attachmentRepository.Delete(attachment);
 }

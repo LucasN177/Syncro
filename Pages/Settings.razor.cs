@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Components;
+using Microsoft.JSInterop;
 using MudBlazor;
 using Syncro.Core.Interfaces.Services;
 using Syncro.Core.Models.Database;
@@ -17,6 +18,31 @@ public partial class Settings : ComponentBase, IDisposable
     [Inject] private AppStateService AppState { get; set; } = default!;
     [Inject] private NavigationManager Navigation { get; set; } = default!;
     [Inject] private ISnackbar Snackbar { get; set; } = default!;
+    [Inject] private IJSRuntime JS { get; set; } = default!;
+
+    private async Task ToggleBrowserNotifications(bool enabled)
+    {
+        if (!enabled)
+        {
+            AppState.SetBrowserNotifications(false);
+            return;
+        }
+
+        var permission = await JS.InvokeAsync<string>("syncroNotifications.request");
+        switch (permission)
+        {
+            case "granted":
+                AppState.SetBrowserNotifications(true);
+                await JS.InvokeVoidAsync("syncroNotifications.show", "Syncro", "Browser-Benachrichtigungen sind aktiviert.");
+                break;
+            case "unsupported":
+                Snackbar.Add("Dein Browser unterstützt keine Benachrichtigungen.", Severity.Warning);
+                break;
+            default:
+                Snackbar.Add("Benachrichtigungen wurden im Browser blockiert. Du kannst sie in den Website-Einstellungen erlauben.", Severity.Warning);
+                break;
+        }
+    }
 
     // Bearbeitungskopie, damit Änderungen erst nach dem Speichern überall sichtbar werden
     private ProfileDto _profile = new();

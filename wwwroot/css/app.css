@@ -136,3 +136,11 @@ code {
     box-shadow: 0 6px 18px rgba(15, 23, 42, 0.12);
     transform: translateY(-1px);
 }
+
+.notification-popover {
+    width: min(380px, calc(100vw - 32px));
+}
+
+.notification-item:hover {
+    background: var(--mud-palette-action-default-hover);
+}

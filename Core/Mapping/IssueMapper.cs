@@ -25,6 +25,7 @@ public static class IssueMapper
             Tags = issue.Tags.ToList(),
             Progress = issue.Progress,
             CommentCount = issue.CommentCount,
+            HasAttachment = issue.AttachmentCount > 0,
             DueDate = issue.DueDate?.Date,
             Position = issue.Position,
             Column = issue.Status.ToColumn()
@@ -48,6 +49,7 @@ public static class IssueMapper
         Progress = issue.Progress,
         Tags = issue.Tags.ToList(),
         CommentCount = issue.CommentCount,
+        AttachmentCount = issue.AttachmentCount,
         CreatedBy = issue.CreatedBy,
         CreatedAt = issue.CreatedAt,
         UpdatedAt = issue.UpdatedAt

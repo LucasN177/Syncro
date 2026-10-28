@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Forms;
+using Microsoft.JSInterop;
 using MudBlazor;
 using Syncro.Core.Interfaces.Services;
 using Syncro.Core.Models;
@@ -12,6 +14,7 @@ public partial class IssueDialog : ComponentBase
     [Inject] private IIssueService IssueService { get; set; } = default!;
     [Inject] private IAuthService AuthService { get; set; } = default!;
     [Inject] private IDialogService DialogService { get; set; } = default!;
+    [Inject] private IJSRuntime JS { get; set; } = default!;
 
     /// <summary>Bearbeitungskopie; Id leer für ein neues Issue.</summary>
     [Parameter] public IssueDto Issue { get; set; } = new();
@@ -32,9 +35,24 @@ public partial class IssueDialog : ComponentBase
     private string? _errorMessage;
     private bool _isBusy;
     private bool _isLoadingComments;
+    private readonly List<AttachmentDto> _attachments = [];
+    private bool _isUploading;
 
-    // Kommentare werden sofort gespeichert; das Board muss danach neu laden
+    // Kommentare und Anhänge werden sofort gespeichert; das Board muss danach neu laden
     private bool _hasChanges;
+
+    /// <summary>Zeigt, wie Mitglieder per @Benutzername erwähnt werden.</summary>
+    private string MentionHint
+    {
+        get
+        {
+            var example = Members.FirstOrDefault(member =>
+                member.UserId != AuthService.CurrentUserId && !string.IsNullOrWhiteSpace(member.Profile?.Username));
+            return example is null
+                ? "Mit @benutzername erwähnst du Projektmitglieder."
+                : $"Mit @{example.Profile!.Username} erwähnst du {example.DisplayName}.";
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -43,11 +61,102 @@ public partial class IssueDialog : ComponentBase
             return;
 
         _isLoadingComments = true;
-        var result = await IssueService.GetComments(Issue.Id);
-        if (result is { IsSuccess: true, Data: not null })
-            _comments.AddRange(result.Data);
+        var commentsTask = IssueService.GetComments(Issue.Id);
+        var attachmentsTask = IssueService.GetAttachments(Issue.Id);
+        await Task.WhenAll(commentsTask, attachmentsTask);
+
+        if (commentsTask.Result is { IsSuccess: true, Data: not null })
+            _comments.AddRange(commentsTask.Result.Data);
+        if (attachmentsTask.Result is { IsSuccess: true, Data: not null })
+            _attachments.AddRange(attachmentsTask.Result.Data);
         _isLoadingComments = false;
     }
+
+    // ── Anhänge ──────────────────────────────────────────────────────────────
+
+    private async Task UploadAttachmentAsync(IBrowserFile? file)
+    {
+        if (file is null)
+            return;
+
+        _errorMessage = null;
+        if (file.Size > Services.IssueService.MaxAttachmentBytes)
+        {
+            _errorMessage = "Dateien dürfen höchstens 10 MB groß sein.";
+            return;
+        }
+
+        _isUploading = true;
+        StateHasChanged();
+        try
+        {
+            await using var stream = file.OpenReadStream(Services.IssueService.MaxAttachmentBytes);
+            using var memory = new MemoryStream();
+            await stream.CopyToAsync(memory);
+
+            var result = await IssueService.AddAttachment(Issue, file.Name, file.ContentType, memory.ToArray());
+            if (result is { IsSuccess: true, Data: not null })
+            {
+                _attachments.Add(result.Data);
+                _hasChanges = true;
+            }
+            else
+            {
+                _errorMessage = result.ErrorMessage ?? "Datei konnte nicht hochgeladen werden.";
+            }
+        }
+        catch (IOException exception)
+        {
+            _errorMessage = $"Datei konnte nicht gelesen werden: {exception.Message}";
+        }
+        finally
+        {
+            _isUploading = false;
+        }
+    }
+
+    private async Task OpenAttachmentAsync(AttachmentDto attachment)
+    {
+        var result = await IssueService.GetAttachmentUrl(attachment);
+        if (result is { IsSuccess: true, Data: not null })
+            await JS.InvokeVoidAsync("open", result.Data, "_blank", "noopener");
+        else
+            _errorMessage = result.ErrorMessage ?? "Datei konnte nicht geöffnet werden.";
+    }
+
+    private async Task DeleteAttachmentAsync(AttachmentDto attachment)
+    {
+        var confirmed = await DialogService.ShowMessageBoxAsync(
+            "Anhang löschen?", $"„{attachment.FileName}“ wird endgültig gelöscht.",
+            yesText: "Löschen", cancelText: "Abbrechen");
+        if (confirmed != true)
+            return;
+
+        var result = await IssueService.DeleteAttachment(attachment);
+        if (!result.IsSuccess)
+        {
+            _errorMessage = result.ErrorMessage ?? "Anhang konnte nicht gelöscht werden.";
+            return;
+        }
+
+        _attachments.Remove(attachment);
+        _hasChanges = true;
+    }
+
+    private static string AttachmentIcon(AttachmentDto attachment) => attachment.ContentType switch
+    {
+        { } type when type.StartsWith("image/") => Icons.Material.Outlined.Image,
+        "application/pdf" => Icons.Material.Outlined.PictureAsPdf,
+        { } type when type.StartsWith("text/") => Icons.Material.Outlined.Description,
+        _ => Icons.Material.Outlined.InsertDriveFile
+    };
+
+    private static string FormatSize(long bytes) => bytes switch
+    {
+        < 1024 => $"{bytes} B",
+        < 1024 * 1024 => $"{bytes / 1024.0:0.#} KB",
+        _ => $"{bytes / (1024.0 * 1024):0.#} MB"
+    };
 
     private ProjectMember? MemberFor(Guid? userId) => Members.FirstOrDefault(member => member.UserId == userId);
 

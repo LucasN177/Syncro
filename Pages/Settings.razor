@@ -81,6 +81,11 @@
                 <MudText Typo="Typo.h6" Style="font-weight: 700;" Class="mb-3">Darstellung & Konto</MudText>
                 <MudSwitch T="bool" Value="AppState.IsDarkMode" ValueChanged="@(_ => AppState.ToggleDarkMode())"
                            Color="Color.Primary" Label="Dunkles Design" />
+                <MudSwitch T="bool" Value="AppState.BrowserNotificationsEnabled" ValueChanged="ToggleBrowserNotifications"
+                           Color="Color.Primary" Label="Browser-Benachrichtigungen" />
+                <MudText Typo="Typo.caption" Color="Color.Secondary">
+                    Zeigt neue Benachrichtigungen auch als Hinweis des Browsers an, solange Syncro geöffnet ist.
+                </MudText>
                 <MudDivider Class="my-3" />
                 <MudButton Variant="Variant.Text" Color="Color.Error" StartIcon="@Icons.Material.Outlined.Logout" OnClick="Logout">
                     Abmelden

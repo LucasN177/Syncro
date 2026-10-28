@@ -39,6 +39,9 @@ builder.Services.AddSingleton<IIssueRepository, IssueRepository>();
 builder.Services.AddSingleton<ICommentRepository, CommentRepository>();
 builder.Services.AddSingleton<IEventRepository, EventRepository>();
 builder.Services.AddSingleton<IActivityRepository, ActivityRepository>();
+builder.Services.AddSingleton<IAttachmentRepository, AttachmentRepository>();
+builder.Services.AddSingleton<INotificationRepository, NotificationRepository>();
+builder.Services.AddSingleton<IRealtimeRepository, RealtimeRepository>();
 
 builder.Services.AddSingleton<AppStateService>();
 builder.Services.AddSingleton<IAuthService, AuthService>();
@@ -47,6 +50,8 @@ builder.Services.AddSingleton<IProjectMemberService, ProjectMemberService>();
 builder.Services.AddSingleton<IIssueService, IssueService>();
 builder.Services.AddSingleton<IEventService, EventService>();
 builder.Services.AddSingleton<IActivityService, ActivityService>();
+builder.Services.AddSingleton<INotificationService, NotificationService>();
+builder.Services.AddSingleton<IRealtimeService, RealtimeService>();
 
 var culture = new CultureInfo("de-DE");
 CultureInfo.DefaultThreadCurrentCulture = culture;

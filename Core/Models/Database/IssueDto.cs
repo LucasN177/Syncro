@@ -53,6 +53,9 @@ public class IssueDto : BaseModel
     [Column("comment_count", ignoreOnInsert: true, ignoreOnUpdate: true)]
     public int CommentCount { get; set; }
 
+    [Column("attachment_count", ignoreOnInsert: true, ignoreOnUpdate: true)]
+    public int AttachmentCount { get; set; }
+
     [Column("created_by", ignoreOnInsert: true, ignoreOnUpdate: true)]
     public Guid? CreatedBy { get; set; }
 

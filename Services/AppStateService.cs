@@ -6,6 +6,7 @@ public class AppStateService
 {
     private const string DarkModeKey = "syncro.darkMode";
     private const string CurrentProjectKey = "syncro.currentProject";
+    private const string BrowserNotificationsKey = "syncro.browserNotifications";
 
     private readonly IJSInProcessRuntime _js;
 
@@ -14,9 +15,20 @@ public class AppStateService
         _js = (IJSInProcessRuntime)js;
         IsDarkMode = Load(DarkModeKey) == "true";
         CurrentProjectId = Guid.TryParse(Load(CurrentProjectKey), out var projectId) ? projectId : null;
+        BrowserNotificationsEnabled = Load(BrowserNotificationsKey) == "true";
     }
 
     public bool IsDarkMode { get; private set; }
+
+    /// <summary>Neue Benachrichtigungen zusätzlich als Browser-Hinweis anzeigen.</summary>
+    public bool BrowserNotificationsEnabled { get; private set; }
+
+    public void SetBrowserNotifications(bool enabled)
+    {
+        BrowserNotificationsEnabled = enabled;
+        Save(BrowserNotificationsKey, enabled ? "true" : "false");
+        NotifyStateChanged();
+    }
 
     public bool IsDrawerOpen { get; set; } = true;
 

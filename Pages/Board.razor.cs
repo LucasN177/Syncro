@@ -11,7 +11,7 @@ using Syncro.Services;
 
 namespace Syncro.Pages;
 
-public partial class Board : ComponentBase, IDisposable
+public partial class Board : ComponentBase, IAsyncDisposable
 {
     private const string AllFilter = "all";
     private const string MeFilter = "me";
@@ -25,6 +25,7 @@ public partial class Board : ComponentBase, IDisposable
     [Inject] private IDialogService DialogService { get; set; } = default!;
     [Inject] private NavigationManager Navigation { get; set; } = default!;
     [Inject] private ISnackbar Snackbar { get; set; } = default!;
+    [Inject] private IRealtimeService RealtimeService { get; set; } = default!;
 
     /// <summary>Aus der Route /projects/{id}/board; ohne Id wird das zuletzt genutzte Projekt geöffnet.</summary>
     [Parameter] public Guid? ProjectId { get; set; }
@@ -39,6 +40,8 @@ public partial class Board : ComponentBase, IDisposable
     private bool _isLoading = true;
     private bool _canEdit;
     private bool _isAdmin;
+    private IAsyncDisposable? _issuesSubscription;
+    private CancellationTokenSource? _reloadDebounce;
 
     private string _search = string.Empty;
     private string _assigneeFilter = AllFilter;
@@ -54,7 +57,44 @@ public partial class Board : ComponentBase, IDisposable
 
     protected override async Task OnParametersSetAsync() => await LoadBoard();
 
-    public void Dispose() => AuthService.OnAuthStateChanged -= HandleAuthStateChanged;
+    public async ValueTask DisposeAsync()
+    {
+        AuthService.OnAuthStateChanged -= HandleAuthStateChanged;
+        _reloadDebounce?.Cancel();
+        if (_issuesSubscription is not null)
+            await _issuesSubscription.DisposeAsync();
+    }
+
+    // ── Realtime ─────────────────────────────────────────────────────────────
+
+    private async Task SubscribeToChanges()
+    {
+        if (_issuesSubscription is not null || !AuthService.IsAuthenticated)
+            return;
+
+        _issuesSubscription = await RealtimeService.SubscribeToIssues(OnIssuesChanged);
+    }
+
+    // Mehrere Änderungen kurz hintereinander (z. B. Drag & Drop) lösen nur ein Neuladen aus
+    private void OnIssuesChanged()
+    {
+        _reloadDebounce?.Cancel();
+        var debounce = _reloadDebounce = new CancellationTokenSource();
+
+        _ = InvokeAsync(async () =>
+        {
+            try
+            {
+                await Task.Delay(400, debounce.Token);
+                await LoadIssues();
+                StateHasChanged();
+            }
+            catch (TaskCanceledException)
+            {
+                // durch eine neuere Änderung ersetzt
+            }
+        });
+    }
 
     private void HandleAuthStateChanged() => InvokeAsync(async () =>
     {
@@ -109,6 +149,8 @@ public partial class Board : ComponentBase, IDisposable
 
         await LoadIssues();
         _isLoading = false;
+
+        await SubscribeToChanges();
     }
 
     private async Task LoadIssues()

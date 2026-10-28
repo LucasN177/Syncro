@@ -34,6 +34,15 @@ else
                         Nur lesen
                     </MudChip>
                 }
+                @if (_issuesSubscription is not null)
+                {
+                    <MudTooltip Text="Änderungen anderer Mitglieder erscheinen automatisch">
+                        <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Color="Color.Success"
+                                 Icon="@Icons.Material.Filled.Circle" Style="font-size: 0.7rem;">
+                            Live
+                        </MudChip>
+                    </MudTooltip>
+                }
             </MudStack>
             <MudText Typo="Typo.body2" Color="Color.Secondary">
                 @_project.Name · @OpenCardCount offene Issues
@@ -237,6 +246,12 @@ else
                                         @context.CommentCount
                                     </MudText>
                                 </MudStack>
+                            }
+                            @if (context.HasAttachment)
+                            {
+                                <MudIcon Icon="@Icons.Material.Outlined.AttachFile"
+                                         Size="Size.Small" Color="Color.Secondary"
+                                         Style="font-size: 13px;" />
                             }
                             @if (context.DueDate is { } dueDate)
                             {

@@ -78,7 +78,57 @@
             @if (!IsNew)
             {
                 <MudDivider Class="my-2" />
-                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                        <MudIcon Icon="@Icons.Material.Outlined.AttachFile" Size="Size.Small" Color="Color.Secondary" />
+                        <MudText Typo="Typo.subtitle2" Style="font-weight: 700;">Anhänge (@_attachments.Count)</MudText>
+                    </MudStack>
+                    @if (CanEdit)
+                    {
+                        <MudFileUpload T="IBrowserFile" FilesChanged="UploadAttachmentAsync" Disabled="@_isUploading"
+                                       MaxFileSize="@Services.IssueService.MaxAttachmentBytes">
+                            <CustomContent>
+                                <MudButton Variant="Variant.Outlined" Size="Size.Small" StartIcon="@Icons.Material.Filled.Upload"
+                                           Disabled="@_isUploading" OnClick="@context.OpenFilePickerAsync"
+                                           Style="border-radius: 8px; font-weight: 700;">
+                                    @(_isUploading ? "Lädt hoch …" : "Datei anhängen")
+                                </MudButton>
+                            </CustomContent>
+                        </MudFileUpload>
+                    }
+                </MudStack>
+
+                @if (_isUploading)
+                {
+                    <MudProgressLinear Indeterminate="true" Color="Color.Primary" Size="Size.Small" />
+                }
+
+                @foreach (var attachment in _attachments)
+                {
+                    <MudPaper Elevation="0" Class="px-3 py-2" Style="border-radius: 10px; border: 1px solid var(--mud-palette-divider);">
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Style="min-width: 0;">
+                                <MudIcon Icon="@AttachmentIcon(attachment)" Size="Size.Small" Color="Color.Primary" />
+                                <MudStack Spacing="0" Style="min-width: 0;">
+                                    <MudLink OnClick="@(() => OpenAttachmentAsync(attachment))" Typo="Typo.body2"
+                                             Style="font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer;">
+                                        @attachment.FileName
+                                    </MudLink>
+                                    <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                        @FormatSize(attachment.SizeBytes) · @(MemberFor(attachment.UploadedBy)?.DisplayName ?? "Ehemaliges Mitglied") · @attachment.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy")
+                                    </MudText>
+                                </MudStack>
+                            </MudStack>
+                            @if (CanEdit)
+                            {
+                                <MudIconButton Icon="@Icons.Material.Outlined.Delete" Size="Size.Small"
+                                               OnClick="@(() => DeleteAttachmentAsync(attachment))" />
+                            }
+                        </MudStack>
+                    </MudPaper>
+                }
+
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2" Class="mt-2">
                     <MudIcon Icon="@Icons.Material.Outlined.ChatBubbleOutline" Size="Size.Small" Color="Color.Secondary" />
                     <MudText Typo="Typo.subtitle2" Style="font-weight: 700;">Kommentare (@_comments.Count)</MudText>
                 </MudStack>
@@ -116,7 +166,7 @@
                 {
                     <MudStack Row="true" AlignItems="AlignItems.End" Spacing="2">
                         <MudTextField @bind-Value="_newComment" Label="Kommentar schreiben" Variant="Variant.Outlined"
-                                      Lines="2" Immediate="true" Style="flex: 1;" />
+                                      Lines="2" Immediate="true" Style="flex: 1;" HelperText="@MentionHint" />
                         <MudButton Variant="Variant.Outlined" Color="Color.Primary" Disabled="@(_isBusy || string.IsNullOrWhiteSpace(_newComment))"
                                    OnClick="AddCommentAsync" Style="border-radius: 8px; font-weight: 700; margin-bottom: 4px;">
                             Senden
