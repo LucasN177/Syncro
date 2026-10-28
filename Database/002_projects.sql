@@ -1,7 +1,8 @@
 -- 002: Projekte
 -- user_id ist der Eigentümer. Zugriffs-Policies basieren auf der Mitgliedschaft
 -- und werden in 003_project_members.sql definiert.
--- Idempotent: läuft auch auf einer Datenbank, in der die alte projects.sql bereits ausgeführt wurde.
+-- Idempotent: läuft auch auf einer Datenbank, in der die alte projects.sql bereits ausgeführt
+-- oder die Tabelle von Hand (z. B. im Supabase Table Editor) angelegt wurde.
 
 create table if not exists public.projects (
     id uuid primary key,
@@ -12,6 +13,71 @@ create table if not exists public.projects (
     color text not null default '#0f766e',
     created_at timestamptz not null default now()
 );
+
+-- ── Bestehende Tabelle auf den erwarteten Stand bringen ─────────────────────
+
+-- Alle bisherigen Policies entfernen: Sie können Typänderungen blockieren und werden
+-- in 003_project_members.sql durch die Policies auf Basis der Mitgliedschaft ersetzt
+do $$
+declare
+    v_policy record;
+begin
+    for v_policy in select policyname from pg_policies where schemaname = 'public' and tablename = 'projects' loop
+        execute format('drop policy %I on public.projects', v_policy.policyname);
+    end loop;
+end;
+$$;
+
+alter table public.projects add column if not exists name text;
+alter table public.projects add column if not exists description text;
+alter table public.projects add column if not exists status text not null default 'Aktiv';
+alter table public.projects add column if not exists color text not null default '#0f766e';
+alter table public.projects add column if not exists created_at timestamptz not null default now();
+alter table public.projects add column if not exists user_id uuid;
+
+update public.projects set name = 'Projekt' where name is null or trim(name) = '';
+alter table public.projects alter column name set not null;
+
+do $$
+declare
+    v_id_type text;
+    v_user_id_type text;
+begin
+    select data_type into v_id_type
+    from information_schema.columns
+    where table_schema = 'public' and table_name = 'projects' and column_name = 'id';
+
+    if v_id_type is distinct from 'uuid' then
+        raise exception using
+            message = format('projects.id hat den Typ %s, Syncro erwartet uuid.', coalesce(v_id_type, 'keinen (Spalte fehlt)')),
+            hint = 'Ist die Tabelle leer oder entbehrlich: "drop table public.projects cascade;" ausführen und das Skript erneut starten.';
+    end if;
+
+    -- user_id wurde im Table Editor evtl. als text angelegt
+    select data_type into v_user_id_type
+    from information_schema.columns
+    where table_schema = 'public' and table_name = 'projects' and column_name = 'user_id';
+
+    if v_user_id_type <> 'uuid' then
+        alter table public.projects alter column user_id type uuid using nullif(trim(user_id::text), '')::uuid;
+    end if;
+
+    if not exists (
+        select 1 from pg_constraint
+        where conrelid = 'public.projects'::regclass and contype = 'f' and conname = 'projects_user_id_fkey'
+    ) then
+        alter table public.projects add constraint projects_user_id_fkey
+            foreign key (user_id) references auth.users(id) on delete cascade;
+    end if;
+
+    -- Projekte ohne Eigentümer sind über RLS nicht erreichbar; NOT NULL nur, wenn es keine gibt
+    if exists (select 1 from public.projects where user_id is null) then
+        raise notice 'Es gibt Projekte ohne user_id. Diese sind erst sichtbar, wenn ihnen ein Eigentümer zugewiesen wird.';
+    else
+        alter table public.projects alter column user_id set not null;
+    end if;
+end;
+$$;
 
 alter table public.projects alter column id set default gen_random_uuid();
 
@@ -106,9 +172,5 @@ create trigger projects_set_updated_at
     before update on public.projects
     for each row execute function public.set_updated_at();
 
+-- Policies folgen in 003_project_members.sql
 alter table public.projects enable row level security;
-
--- Alte Eigentümer-Policies aus projects.sql entfernen (werden in 003 ersetzt)
-drop policy if exists "Users can read their own projects" on public.projects;
-drop policy if exists "Users can create their own projects" on public.projects;
-drop policy if exists "Users can update their own projects" on public.projects;
