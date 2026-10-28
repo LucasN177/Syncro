@@ -118,6 +118,32 @@ check "Eigentümer ist admin, Projekt ohne Eigentümer bleibt erhalten" \
     "$(psql_db t_upgrade_manual -tAc "select (select count(*) from project_members where role = 'admin') || '/' || (select count(*) from projects where user_id is null)")" \
     "2/1"
 
+echo "== Gleichnamige Funktionen aus früheren Setups"
+# Zu jeder Funktion aus den Migrationen eine abweichende Variante erzeugen (anderer Rückgabetyp,
+# keine Parameternamen). Fehlt eine Funktion in 000_function_conflicts.sql, scheitert setup_all.sql.
+functions_query="select string_agg(p.proname || '(' || pg_get_function_arguments(p.oid) || ') ' || pg_get_function_result(p.oid), E'\n' order by p.proname, oidvectortypes(p.proargtypes))
+                 from pg_proc p where p.pronamespace = 'public'::regnamespace"
+prepare_db t_functions_reference all
+reference_functions=$(psql_db t_functions_reference -tAc "$functions_query")
+conflicting_ddl=$(psql_db t_functions_reference -tAc "
+    select string_agg(format('create function public.%I(%s) returns %s language sql as \$f\$ select null::%s \$f\$;',
+               p.proname, oidvectortypes(p.proargtypes), alt.type, alt.type), E'\n')
+    from pg_proc p
+    cross join lateral (select case when pg_get_function_result(p.oid) = 'integer' then 'boolean' else 'integer' end as type) alt
+    where p.pronamespace = 'public'::regnamespace")
+
+docker exec "$CONTAINER" psql -U postgres -q -c "create database t_function_conflicts" >/dev/null
+psql_db t_function_conflicts < tests/supabase_stub.sql
+psql_db t_function_conflicts -c "$conflicting_ddl"
+check "Abweichende Funktionen angelegt" \
+    "$(psql_db t_function_conflicts -tAc "select count(*) from pg_proc where pronamespace = 'public'::regnamespace")" \
+    "$(grep -c . <<< "$reference_functions")"
+for run in 1 2; do
+    run_sql_file t_function_conflicts setup_all.sql
+done
+check "Nach dem Setup entsprechen alle Funktionen der Referenz" \
+    "$(psql_db t_function_conflicts -tAc "$functions_query")" "$reference_functions"
+
 echo "== Tabelle mit bigint-Id wird mit klarer Meldung abgelehnt"
 docker exec "$CONTAINER" psql -U postgres -q -c "create database t_bigint" >/dev/null
 psql_db t_bigint < tests/supabase_stub.sql
