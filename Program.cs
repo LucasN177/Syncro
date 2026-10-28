@@ -34,10 +34,19 @@ builder.Services.AddSingleton<Client>(provider =>
 );
 builder.Services.AddSingleton<IAuthRepository, AuthRepository>();
 builder.Services.AddSingleton<IProjectRepository, ProjectRepository>();
+builder.Services.AddSingleton<IProjectMemberRepository, ProjectMemberRepository>();
+builder.Services.AddSingleton<IIssueRepository, IssueRepository>();
+builder.Services.AddSingleton<ICommentRepository, CommentRepository>();
+builder.Services.AddSingleton<IEventRepository, EventRepository>();
+builder.Services.AddSingleton<IActivityRepository, ActivityRepository>();
 
 builder.Services.AddSingleton<AppStateService>();
 builder.Services.AddSingleton<IAuthService, AuthService>();
 builder.Services.AddSingleton<IProjectService, ProjectService>();
+builder.Services.AddSingleton<IProjectMemberService, ProjectMemberService>();
+builder.Services.AddSingleton<IIssueService, IssueService>();
+builder.Services.AddSingleton<IEventService, EventService>();
+builder.Services.AddSingleton<IActivityService, ActivityService>();
 
 var culture = new CultureInfo("de-DE");
 CultureInfo.DefaultThreadCurrentCulture = culture;

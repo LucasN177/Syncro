@@ -162,7 +162,7 @@
                                      Style="font-size: 13px;" />
                         }
                         <MudText Typo="Typo.caption" Color="Color.Secondary">
-                            @context.DueDate
+                            @context.DueDate?.ToString("dd.MM.yyyy")
                         </MudText>
                     </MudStack>
                 </MudStack>
