@@ -1,4 +1,4 @@
-using System.Text;
+using Syncro.Layout.Helper;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 using MudBlazor;
@@ -207,38 +207,8 @@ public partial class Home : ComponentBase, IDisposable
 
     private async Task ExportCsv()
     {
-        var csv = new StringBuilder();
-        csv.AppendLine("Projekt;Nummer;Titel;Typ;Priorität;Status;Zugewiesen;Fällig;Fortschritt;Tags;Erstellt");
-
-        foreach (var issue in _issues.OrderBy(issue => ProjectFor(issue.ProjectId)?.Name).ThenBy(issue => issue.Number))
-        {
-            var project = ProjectFor(issue.ProjectId);
-            csv.AppendLine(string.Join(';',
-                Escape(project?.Name),
-                Escape(issue.ToIssueKey(project?.Key)),
-                Escape(issue.Title),
-                Escape(IssueOptions.TypeDisplayName(issue.Type)),
-                Escape(IssueOptions.PriorityDisplayName(issue.Priority)),
-                Escape(issue.Status.ToColumn().ToDisplayName()),
-                Escape(ProfileFor(issue.AssigneeId)?.DisplayName),
-                Escape(issue.DueDate?.ToString("dd.MM.yyyy")),
-                Escape(issue.Progress?.ToString()),
-                Escape(string.Join(", ", issue.Tags)),
-                Escape(issue.CreatedAt.ToLocalTime().ToString("dd.MM.yyyy"))));
-        }
-
-        // BOM, damit Excel Umlaute korrekt erkennt
-        await JS.InvokeVoidAsync("syncroDownloadFile",
-            $"syncro-issues-{DateTime.Today:yyyy-MM-dd}.csv", "﻿" + csv, "text/csv;charset=utf-8");
-    }
-
-    private static string Escape(string? value)
-    {
-        if (string.IsNullOrEmpty(value))
-            return string.Empty;
-        return value.IndexOfAny([';', '"', '\n', '\r']) >= 0
-            ? $"\"{value.Replace("\"", "\"\"")}\""
-            : value;
+        var csv = CsvExporter.ExportIssues(_issues, _projects, _profiles);
+        await JS.InvokeVoidAsync("syncroDownloadFile", $"syncro-issues-{DateTime.Today:yyyy-MM-dd}.csv", csv, "text/csv;charset=utf-8");
     }
 
     // ── SVG-Donut ────────────────────────────────────────────────────────────

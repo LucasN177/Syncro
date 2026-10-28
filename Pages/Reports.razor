@@ -1,0 +1,151 @@
+@page "/reports"
+@using Syncro.Core.Mapping
+@using Syncro.Layout.Helper
+<RequireAuth>
+
+    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-6" Style="margin-top: 50px; flex-wrap: wrap; gap: 16px;">
+        <MudStack Spacing="0">
+            <MudText Typo="Typo.h4" Style="font-weight: 800; letter-spacing: -1px;">Reports</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                Auswertung für @(_selectedProjectId == Guid.Empty ? "alle aktiven Projekte" : ProjectFor(_selectedProjectId)?.Name)
+            </MudText>
+        </MudStack>
+        <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
+            @if (_projects.Any())
+            {
+                <ProjectSelect Projects="_projects" Value="_selectedProjectId" ValueChanged="SelectProject" AllowAll="true" />
+            }
+            <MudButton Variant="Variant.Outlined" Size="Size.Small" StartIcon="@Icons.Material.Outlined.FileDownload"
+                       Disabled="@(!_issues.Any())" OnClick="ExportCsv" Style="border-radius: 10px; font-weight: 700;">
+                CSV exportieren
+            </MudButton>
+        </MudStack>
+    </MudStack>
+
+    @if (_isLoading)
+    {
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="mb-4" />
+    }
+
+    @if (!_isLoading && !_issues.Any())
+    {
+        <MudPaper Elevation="0" Class="pa-10" Style="border-radius: 16px; border: 1px dashed var(--mud-palette-divider); text-align: center;">
+            <MudIcon Icon="@Icons.Material.Filled.BarChart" Size="Size.Large" Color="Color.Secondary" Class="mb-3" />
+            <MudText Typo="Typo.h6" Style="font-weight: 700;">Noch keine Daten</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">Sobald es Issues gibt, erscheinen hier die Auswertungen.</MudText>
+        </MudPaper>
+    }
+    else if (_issues.Any())
+    {
+        <MudGrid Spacing="4" Class="mb-4">
+            @foreach (var (label, value, hint, hex) in Kpis)
+            {
+                <MudItem xs="6" lg="3">
+                    <MudPaper Elevation="0" Class="pa-5" Style="border-radius: 16px; border: 1px solid var(--mud-palette-divider); background: var(--mud-palette-surface); height: 100%;">
+                        <MudText Typo="Typo.body2" Color="Color.Secondary" Style="font-weight: 600;">@label</MudText>
+                        <MudText Style="@($"font-size: 2rem; font-weight: 800; letter-spacing: -1px; color: {hex};")">@value</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">@hint</MudText>
+                    </MudPaper>
+                </MudItem>
+            }
+        </MudGrid>
+
+        <MudGrid Spacing="4" Class="mb-4">
+            <MudItem xs="12" md="4">
+                <MudPaper Elevation="0" Class="pa-5" Style="border-radius: 16px; border: 1px solid var(--mud-palette-divider); background: var(--mud-palette-surface); height: 100%;">
+                    <MudText Typo="Typo.h6" Style="font-weight: 700;" Class="mb-4">Nach Spalte</MudText>
+                    <BarList Items="ByStatus" />
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="12" md="4">
+                <MudPaper Elevation="0" Class="pa-5" Style="border-radius: 16px; border: 1px solid var(--mud-palette-divider); background: var(--mud-palette-surface); height: 100%;">
+                    <MudText Typo="Typo.h6" Style="font-weight: 700;">Offen nach Typ</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-4 d-block">Ohne erledigte Issues</MudText>
+                    <BarList Items="ByType" />
+                </MudPaper>
+            </MudItem>
+            <MudItem xs="12" md="4">
+                <MudPaper Elevation="0" Class="pa-5" Style="border-radius: 16px; border: 1px solid var(--mud-palette-divider); background: var(--mud-palette-surface); height: 100%;">
+                    <MudText Typo="Typo.h6" Style="font-weight: 700;">Offen nach Priorität</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-4 d-block">Ohne erledigte Issues</MudText>
+                    <BarList Items="ByPriority" />
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+
+        <MudGrid Spacing="4" Class="mb-4">
+            <MudItem xs="12" lg="6">
+                <MudPaper Elevation="0" Class="pa-5" Style="border-radius: 16px; border: 1px solid var(--mud-palette-divider); background: var(--mud-palette-surface); height: 100%;">
+                    <MudText Typo="Typo.h6" Style="font-weight: 700;">Neue Issues pro Woche</MudText>
+                    <MudText Typo="Typo.caption" Color="Color.Secondary" Class="mb-4 d-block">Letzte 8 Kalenderwochen</MudText>
+                    @{
+                        var weeks = CreatedPerWeek;
+                        var maxWeek = Math.Max(1, weeks.Max(week => week.Count));
+                    }
+                    <div style="display: flex; align-items: flex-end; gap: 10px; height: 180px;">
+                        @foreach (var week in weeks)
+                        {
+                            <div style="flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; justify-content: flex-end;">
+                                <MudText Typo="Typo.caption" Style="font-weight: 700;">@week.Count</MudText>
+                                <div style="@($"width: 100%; max-width: 36px; height: {week.Count * 140 / maxWeek}px; min-height: 2px; background: var(--mud-palette-primary); border-radius: 6px 6px 0 0;")"></div>
+                                <MudText Typo="Typo.caption" Color="Color.Secondary" Style="font-size: 0.65rem;">@week.Label</MudText>
+                            </div>
+                        }
+                    </div>
+                </MudPaper>
+            </MudItem>
+
+            <MudItem xs="12" lg="6">
+                <MudPaper Elevation="0" Class="pa-5" Style="border-radius: 16px; border: 1px solid var(--mud-palette-divider); background: var(--mud-palette-surface); height: 100%;">
+                    <MudText Typo="Typo.h6" Style="font-weight: 700;" Class="mb-3">Pro Person</MudText>
+                    <MudSimpleTable Dense="true" Hover="true" Elevation="0" Style="background: transparent;">
+                        <thead>
+                            <tr>
+                                <th>Person</th>
+                                <th style="text-align: right;">Offen</th>
+                                <th style="text-align: right;">Erledigt</th>
+                                <th style="text-align: right;">Überfällig</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var row in PerPerson)
+                            {
+                                <tr>
+                                    <td>@row.Name</td>
+                                    <td style="text-align: right;">@row.Open</td>
+                                    <td style="text-align: right;">@row.Done</td>
+                                    <td style="@($"text-align: right; {(row.Overdue > 0 ? "color: var(--mud-palette-error); font-weight: 700;" : string.Empty)}")">@row.Overdue</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </MudSimpleTable>
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+
+        <MudPaper Elevation="0" Class="pa-5" Style="border-radius: 16px; border: 1px solid var(--mud-palette-divider); background: var(--mud-palette-surface);">
+            <MudText Typo="Typo.h6" Style="font-weight: 700;" Class="mb-3">Überfällige Issues (@OverdueIssues.Count())</MudText>
+            @if (!OverdueIssues.Any())
+            {
+                <MudText Typo="Typo.body2" Color="Color.Secondary">Nichts überfällig.</MudText>
+            }
+            <MudStack Spacing="1">
+                @foreach (var issue in OverdueIssues)
+                {
+                    var project = ProjectFor(issue.ProjectId);
+                    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="py-1">
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                            <MudText Typo="Typo.caption" Style="font-family: monospace; font-weight: 700;">@issue.ToIssueKey(project?.Key)</MudText>
+                            <MudLink Href="@($"projects/{issue.ProjectId}/board")" Typo="Typo.body2">@issue.Title</MudLink>
+                        </MudStack>
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">@(AssigneeName(issue.AssigneeId) ?? "Nicht zugewiesen")</MudText>
+                            <MudText Typo="Typo.caption" Color="Color.Error" Style="font-weight: 700;">@issue.DueDate?.ToString("dd.MM.yyyy")</MudText>
+                        </MudStack>
+                    </MudStack>
+                }
+            </MudStack>
+        </MudPaper>
+    }
+
+</RequireAuth>

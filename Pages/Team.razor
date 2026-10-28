@@ -1,0 +1,147 @@
+@page "/team"
+@using Syncro.Core.Constants
+@using Syncro.Layout.Helper
+<RequireAuth>
+
+    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-6" Style="margin-top: 50px; flex-wrap: wrap; gap: 16px;">
+        <MudStack Spacing="0">
+            <MudText Typo="Typo.h4" Style="font-weight: 800; letter-spacing: -1px;">Team</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                @(_project is null ? "Mitglieder deiner Projekte" : $"{_members.Count} Mitglied{(_members.Count == 1 ? string.Empty : "er")} in {_project.Name}")
+            </MudText>
+        </MudStack>
+        @if (_projects.Any())
+        {
+            <ProjectSelect Projects="_projects" Value="@(_project?.Id ?? Guid.Empty)" ValueChanged="SelectProject" />
+        }
+    </MudStack>
+
+    @if (_isLoading)
+    {
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="mb-4" />
+    }
+
+    @if (!_isLoading && _project is null)
+    {
+        <MudPaper Elevation="0" Class="pa-10" Style="border-radius: 16px; border: 1px dashed var(--mud-palette-divider); text-align: center;">
+            <MudIcon Icon="@Icons.Material.Filled.Group" Size="Size.Large" Color="Color.Secondary" Class="mb-3" />
+            <MudText Typo="Typo.h6" Style="font-weight: 700;">Noch kein Projekt</MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mb-4">Lege ein Projekt an, um Mitglieder einzuladen.</MudText>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="projects">Zu den Projekten</MudButton>
+        </MudPaper>
+    }
+    else if (_project is not null)
+    {
+        <MudGrid Spacing="4">
+            <MudItem xs="12" lg="8">
+                <MudPaper Elevation="0" Class="pa-5" Style="border-radius: 16px; border: 1px solid var(--mud-palette-divider); background: var(--mud-palette-surface);">
+                    <MudText Typo="Typo.h6" Style="font-weight: 700;" Class="mb-4">Mitglieder</MudText>
+                    <MudStack Spacing="2">
+                        @foreach (var member in _members)
+                        {
+                            var isMe = member.UserId == AuthService.CurrentUserId;
+                            <MudPaper Elevation="0" Class="pa-3" Style="border-radius: 12px; border: 1px solid var(--mud-palette-divider);">
+                                <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Style="flex-wrap: wrap; gap: 12px;">
+                                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="3">
+                                        <MudAvatar Style="@($"background: {member.AvatarColor}; color: white; font-weight: 800; font-size: 0.8rem;")">
+                                            @StyleHelper.GetInitials(member.DisplayName)
+                                        </MudAvatar>
+                                        <MudStack Spacing="0">
+                                            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                                <MudText Typo="Typo.body1" Style="font-weight: 700;">@member.DisplayName</MudText>
+                                                @if (isMe)
+                                                {
+                                                    <MudText Typo="Typo.caption" Color="Color.Secondary">(du)</MudText>
+                                                }
+                                                @if (member.IsOwner)
+                                                {
+                                                    <MudChip T="string" Size="Size.Small" Color="Color.Primary" Variant="Variant.Outlined"
+                                                             Icon="@Icons.Material.Filled.Star" Style="height: 20px; font-size: 0.65rem; font-weight: 700;">
+                                                        Eigentümer
+                                                    </MudChip>
+                                                }
+                                            </MudStack>
+                                            <MudText Typo="Typo.caption" Color="Color.Secondary">
+                                                @member.Email · @OpenIssuesFor(member.UserId) offene Issues
+                                            </MudText>
+                                        </MudStack>
+                                    </MudStack>
+
+                                    <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
+                                        @if (_isAdmin && !member.IsOwner)
+                                        {
+                                            <MudSelect T="string" Value="member.Role" ValueChanged="@(role => ChangeRole(member, role))"
+                                                       Variant="Variant.Outlined" Margin="Margin.Dense" Dense="true" Style="width: 150px;">
+                                                @foreach (var role in ProjectRoles.All)
+                                                {
+                                                    <MudSelectItem Value="@role">@ProjectRoles.DisplayName(role)</MudSelectItem>
+                                                }
+                                            </MudSelect>
+                                            <MudTooltip Text="Aus dem Projekt entfernen">
+                                                <MudIconButton Icon="@Icons.Material.Outlined.PersonRemove" Color="Color.Error" Size="Size.Small"
+                                                               OnClick="@(() => RemoveMember(member))" />
+                                            </MudTooltip>
+                                        }
+                                        else
+                                        {
+                                            <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Style="font-weight: 700;">
+                                                @ProjectRoles.DisplayName(member.Role)
+                                            </MudChip>
+                                        }
+                                        @if (isMe && !member.IsOwner)
+                                        {
+                                            <MudButton Size="Size.Small" Variant="Variant.Text" Color="Color.Error"
+                                                       StartIcon="@Icons.Material.Outlined.Logout" OnClick="@(() => LeaveProject(member))">
+                                                Verlassen
+                                            </MudButton>
+                                        }
+                                    </MudStack>
+                                </MudStack>
+                            </MudPaper>
+                        }
+                    </MudStack>
+                </MudPaper>
+            </MudItem>
+
+            <MudItem xs="12" lg="4">
+                @if (_isAdmin)
+                {
+                    <MudPaper Elevation="0" Class="pa-5 mb-4" Style="border-radius: 16px; border: 1px solid var(--mud-palette-divider); background: var(--mud-palette-surface);">
+                        <MudText Typo="Typo.h6" Style="font-weight: 700;">Mitglied einladen</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">
+                            Die Person muss bereits ein Syncro-Konto haben.
+                        </MudText>
+                        <MudStack Spacing="3" Class="mt-4">
+                            <MudTextField @bind-Value="_inviteEmail" Label="E-Mail-Adresse" Variant="Variant.Outlined"
+                                          InputType="InputType.Email" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Outlined.Email" />
+                            <MudSelect T="string" @bind-Value="_inviteRole" Label="Rolle" Variant="Variant.Outlined">
+                                @foreach (var role in ProjectRoles.All)
+                                {
+                                    <MudSelectItem Value="@role">@ProjectRoles.DisplayName(role)</MudSelectItem>
+                                }
+                            </MudSelect>
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.PersonAdd"
+                                       Disabled="@(_isInviting || string.IsNullOrWhiteSpace(_inviteEmail))" OnClick="Invite"
+                                       Style="border-radius: 10px; font-weight: 700;">
+                                @(_isInviting ? "Lädt ein …" : "Einladen")
+                            </MudButton>
+                        </MudStack>
+                    </MudPaper>
+                }
+
+                <MudPaper Elevation="0" Class="pa-5" Style="border-radius: 16px; border: 1px solid var(--mud-palette-divider); background: var(--mud-palette-surface);">
+                    <MudText Typo="Typo.h6" Style="font-weight: 700;" Class="mb-3">Rollen</MudText>
+                    <MudStack Spacing="2">
+                        <MudText Typo="Typo.body2"><b>Admin</b> – bearbeitet Projekt und Issues, verwaltet Mitglieder.</MudText>
+                        <MudText Typo="Typo.body2"><b>Mitglied</b> – legt Issues an, verschiebt und kommentiert sie.</MudText>
+                        <MudText Typo="Typo.body2"><b>Betrachter</b> – sieht Board, Kalender und Reports nur lesend.</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">
+                            Nur der Eigentümer kann das Projekt löschen und nicht entfernt werden.
+                        </MudText>
+                    </MudStack>
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+    }
+
+</RequireAuth>

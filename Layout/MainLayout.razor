@@ -101,11 +101,20 @@
 {
     private string UserInitials => StyleHelper.GetInitials(AuthService.DisplayName);
 
-    protected override void OnInitialized() => AuthService.OnAuthStateChanged += HandleAuthStateChanged;
+    protected override void OnInitialized()
+    {
+        AuthService.OnAuthStateChanged += HandleStateChanged;
+        // Dark Mode kann auch auf der Einstellungsseite umgeschaltet werden
+        AppStateService.OnChange += HandleStateChanged;
+    }
 
-    private void HandleAuthStateChanged() => InvokeAsync(StateHasChanged);
+    private void HandleStateChanged() => InvokeAsync(StateHasChanged);
 
-    public void Dispose() => AuthService.OnAuthStateChanged -= HandleAuthStateChanged;
+    public void Dispose()
+    {
+        AuthService.OnAuthStateChanged -= HandleStateChanged;
+        AppStateService.OnChange -= HandleStateChanged;
+    }
 
     private async Task OpenLoginAsync()
     {

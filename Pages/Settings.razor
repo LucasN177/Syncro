@@ -1,0 +1,92 @@
+@page "/settings"
+@using Syncro.Layout.Helper
+<RequireAuth>
+
+    <MudStack Spacing="0" Class="mb-6" Style="margin-top: 50px;">
+        <MudText Typo="Typo.h4" Style="font-weight: 800; letter-spacing: -1px;">Einstellungen</MudText>
+        <MudText Typo="Typo.body2" Color="Color.Secondary">Profil, Sicherheit und Darstellung</MudText>
+    </MudStack>
+
+    <MudGrid Spacing="4">
+        <MudItem xs="12" lg="7">
+            <MudPaper Elevation="0" Class="pa-5" Style="border-radius: 16px; border: 1px solid var(--mud-palette-divider); background: var(--mud-palette-surface);">
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="3" Class="mb-4">
+                    <MudAvatar Size="Size.Large" Style="@($"background: {_profile.AvatarColor}; color: white; font-weight: 800;")">
+                        @StyleHelper.GetInitials(_profile.DisplayName)
+                    </MudAvatar>
+                    <MudStack Spacing="0">
+                        <MudText Typo="Typo.h6" Style="font-weight: 700;">@_profile.DisplayName</MudText>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">@AuthService.CurrentUser?.Email</MudText>
+                    </MudStack>
+                </MudStack>
+
+                <MudStack Spacing="3">
+                    <MudGrid Spacing="2">
+                        <MudItem xs="12" sm="6">
+                            <MudTextField @bind-Value="_profile.Vorname" Label="Vorname" Variant="Variant.Outlined" MaxLength="60" Immediate="true" />
+                        </MudItem>
+                        <MudItem xs="12" sm="6">
+                            <MudTextField @bind-Value="_profile.Nachname" Label="Nachname" Variant="Variant.Outlined" MaxLength="60" Immediate="true" />
+                        </MudItem>
+                    </MudGrid>
+                    <MudTextField @bind-Value="_profile.Username" Label="Benutzername" Variant="Variant.Outlined" MaxLength="40"
+                                  HelperText="Wird angezeigt, wenn kein Vor- und Nachname hinterlegt ist." Immediate="true" />
+                    <MudTextField Value="@AuthService.CurrentUser?.Email" Label="E-Mail-Adresse" Variant="Variant.Outlined" ReadOnly="true" />
+
+                    <div>
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Avatarfarbe</MudText>
+                        <MudStack Row="true" Spacing="1" Class="mt-1" Style="flex-wrap: wrap;">
+                            @foreach (var color in AvatarColors)
+                            {
+                                var isSelected = string.Equals(_profile.AvatarColor, color, StringComparison.OrdinalIgnoreCase);
+                                <button type="button" title="@color" @onclick="@(() => _profile.AvatarColor = color)"
+                                        style="@($"width: 30px; height: 30px; border-radius: 50%; background: {color}; cursor: pointer; border: 3px solid {(isSelected ? "var(--mud-palette-text-primary)" : "transparent")};")">
+                                </button>
+                            }
+                        </MudStack>
+                    </div>
+
+                    <MudStack Row="true" Justify="Justify.FlexEnd">
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@_isSavingProfile" OnClick="SaveProfile"
+                                   Style="border-radius: 10px; font-weight: 700;">
+                            @(_isSavingProfile ? "Speichert …" : "Profil speichern")
+                        </MudButton>
+                    </MudStack>
+                </MudStack>
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" lg="5">
+            <MudPaper Elevation="0" Class="pa-5 mb-4" Style="border-radius: 16px; border: 1px solid var(--mud-palette-divider); background: var(--mud-palette-surface);">
+                <MudText Typo="Typo.h6" Style="font-weight: 700;" Class="mb-3">Passwort ändern</MudText>
+                <MudStack Spacing="3">
+                    @if (!string.IsNullOrWhiteSpace(_passwordError))
+                    {
+                        <MudAlert Severity="Severity.Error" Dense="true" Variant="Variant.Outlined">@_passwordError</MudAlert>
+                    }
+                    <MudTextField @bind-Value="_newPassword" Label="Neues Passwort" Variant="Variant.Outlined"
+                                  InputType="InputType.Password" HelperText="Mindestens 8 Zeichen" />
+                    <MudTextField @bind-Value="_confirmPassword" Label="Passwort wiederholen" Variant="Variant.Outlined"
+                                  InputType="InputType.Password" />
+                    <MudStack Row="true" Justify="Justify.FlexEnd">
+                        <MudButton Variant="Variant.Outlined" Color="Color.Primary" Disabled="@_isSavingPassword" OnClick="ChangePassword"
+                                   Style="border-radius: 10px; font-weight: 700;">
+                            Passwort ändern
+                        </MudButton>
+                    </MudStack>
+                </MudStack>
+            </MudPaper>
+
+            <MudPaper Elevation="0" Class="pa-5" Style="border-radius: 16px; border: 1px solid var(--mud-palette-divider); background: var(--mud-palette-surface);">
+                <MudText Typo="Typo.h6" Style="font-weight: 700;" Class="mb-3">Darstellung & Konto</MudText>
+                <MudSwitch T="bool" Value="AppState.IsDarkMode" ValueChanged="@(_ => AppState.ToggleDarkMode())"
+                           Color="Color.Primary" Label="Dunkles Design" />
+                <MudDivider Class="my-3" />
+                <MudButton Variant="Variant.Text" Color="Color.Error" StartIcon="@Icons.Material.Outlined.Logout" OnClick="Logout">
+                    Abmelden
+                </MudButton>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+
+</RequireAuth>
