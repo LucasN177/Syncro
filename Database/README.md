@@ -11,6 +11,13 @@ Die Migrationen werden im Supabase SQL-Editor **in Reihenfolge** ausgeführt. Je
 | `005_issue_comments.sql` | `issue_comments`, pflegt `issues.comment_count` |
 | `006_events.sql` | `events` und `event_attendees` für den Kalender |
 | `007_activity_log.sql` | `activity_log`, wird per Trigger befüllt |
+| `008_attachments.sql` | `issue_attachments`, privater Storage-Bucket `attachments` (max. 10 MB je Datei) mit Policies |
+| `009_notifications.sql` | `notifications` bei Zuweisung, Kommentar, `@username`-Erwähnung und Projekteinladung |
+| `010_realtime.sql` | nimmt `issues` und `notifications` in die Realtime-Publikation auf |
+
+`004_issues.sql` wurde für die Anhänge um die Spalte `attachment_count` erweitert. Wer 004 schon früher ausgeführt hat, führt die Datei vor 008 einfach erneut aus.
+
+Dateien im Storage liegen unter `{project_id}/{issue_id}/{dateiname}`. Wird ein Issue oder Projekt gelöscht, verschwinden die Einträge in `issue_attachments`, die Dateien selbst bleiben aber im Bucket liegen. Supabase empfiehlt, Storage-Dateien nicht per SQL zu löschen.
 
 ## Rechte
 

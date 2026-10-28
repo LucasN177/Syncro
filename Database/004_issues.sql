@@ -26,6 +26,9 @@ create table if not exists public.issues (
     unique (project_id, number)
 );
 
+-- Anzahl Anhänge, gepflegt von 008_attachments.sql
+alter table public.issues add column if not exists attachment_count integer not null default 0;
+
 create index if not exists issues_project_status_position_idx on public.issues (project_id, status, position);
 create index if not exists issues_assignee_id_idx on public.issues (assignee_id);
 create index if not exists issues_due_date_idx on public.issues (due_date) where due_date is not null;
@@ -49,14 +52,18 @@ begin
         new.created_by = auth.uid();
         new.created_at = now();
         new.comment_count = 0;
+        new.attachment_count = 0;
     else
         new.project_id = old.project_id;
         new.number = old.number;
         new.created_by = old.created_by;
         new.created_at = old.created_at;
-        -- comment_count wird nur vom Kommentar-Trigger gepflegt
+        -- comment_count und attachment_count werden nur von Triggern gepflegt
         if current_setting('syncro.allow_comment_count_update', true) is distinct from 'on' then
             new.comment_count = old.comment_count;
+        end if;
+        if current_setting('syncro.allow_attachment_count_update', true) is distinct from 'on' then
+            new.attachment_count = old.attachment_count;
         end if;
     end if;
     return new;
