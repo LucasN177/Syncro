@@ -3,7 +3,7 @@ using Supabase.Postgrest.Models;
 
 namespace Syncro.Core.Models.Database;
 
-[Table("users")]
+[Table("profiles")]
 public class UserDto : BaseModel
 {
     [Column("id")]
