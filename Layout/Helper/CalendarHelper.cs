@@ -4,19 +4,17 @@ namespace Syncro.Layout.Helper;
 
 public static class CalendarHelper
 {
-    private static readonly DateTime CurrentMonth = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
-    
-    public static List<List<DateTime>> GetCalendarWeeks()
+    public static List<List<DateTime>> GetCalendarWeeks(DateTime month)
     {
+        var first = new DateTime(month.Year, month.Month, 1);
         var weeks = new List<List<DateTime>>();
-        var first = CurrentMonth;
         var offset = ((int)first.DayOfWeek + 6) % 7; // Monday = 0
         var start = first.AddDays(-offset);
 
         for (int w = 0; w < 6; w++)
         {
             var week = Enumerable.Range(0, 7).Select(d => start.AddDays(w * 7 + d)).ToList();
-            if (week.Any(d => d.Month == CurrentMonth.Month))
+            if (week.Any(d => d.Month == first.Month))
                 weeks.Add(week);
         }
         return weeks;

@@ -22,7 +22,13 @@ public partial class CalendarAddDialog : ComponentBase
     private DateTime? _newEndDate   = DateTime.Today;
     private TimeSpan? _newStartTime = new TimeSpan(9, 0, 0);
     private TimeSpan? _newEndTime   = new TimeSpan(10, 0, 0);
-    
+
+    protected override void OnInitialized()
+    {
+        if (SelectedDay.HasValue)
+            _newStartDate = _newEndDate = SelectedDay.Value.Date;
+    }
+
     private void Submit()
     {
         NewEvent.Start = Combine(_newStartDate!.Value, _newStartTime!.Value);

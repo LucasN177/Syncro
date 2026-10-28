@@ -1,42 +1,31 @@
 @page "/board"
+@using Syncro.Core.Constants
 @using Syncro.Core.Mapping
 @using Syncro.Core.Models
 @using Syncro.Core.Models.Enums
-@using Syncro.FakeData
 @using Syncro.Layout.Helper
-
-
+<RequireAuth>
 
 <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-6" Style="margin-top: 50px">
     <MudStack Spacing="0">
         <MudText Typo="Typo.h4" Style="font-weight: 800; letter-spacing: -1px;">Board</MudText>
         <MudText Typo="Typo.body2" Color="Color.Secondary">
-            @_allCards.Count open issues · Sprint ends in 6 days
+            @OpenCardCount offene Issues
         </MudText>
     </MudStack>
     <MudStack Row="true" Spacing="2" AlignItems="AlignItems.Center">
-        <MudAvatarGroup Max="4" Spacing="2">
-            <MudTooltip Text="Lucas M."><MudAvatar Size="Size.Small" Color="Color.Primary"   Style="font-size:0.7rem;font-weight:700;">LM</MudAvatar></MudTooltip>
-            <MudTooltip Text="Anna K."> <MudAvatar Size="Size.Small" Color="Color.Secondary" Style="font-size:0.7rem;font-weight:700;">AK</MudAvatar></MudTooltip>
-            <MudTooltip Text="Tim R.">  <MudAvatar Size="Size.Small" Color="Color.Tertiary"  Style="font-size:0.7rem;font-weight:700;">TR</MudAvatar></MudTooltip>
-            <MudTooltip Text="Sara B."> <MudAvatar Size="Size.Small" Color="Color.Info"      Style="font-size:0.7rem;font-weight:700;">SB</MudAvatar></MudTooltip>
-        </MudAvatarGroup>
-        <MudChip T="string" Icon="@Icons.Material.Filled.Circle" IconColor="Color.Success"
-                 Size="Size.Small" Variant="Variant.Outlined">
-            Sprint 1 – Active
-        </MudChip>
         <MudButton Variant="Variant.Filled" Color="Color.Primary"
                    StartIcon="@Icons.Material.Filled.Add"
                    Size="Size.Small"
                    Style="border-radius: 10px; font-weight: 700;">
-            Add Issue
+            Issue hinzufügen
         </MudButton>
     </MudStack>
 </MudStack>
 
 <MudDropContainer T="KanbanCard"
                   Items="_allCards"
-                  ItemsSelector="@((card, zoneId) => card.Column.MapColumnEnumToString() == zoneId)"
+                  ItemsSelector="@((card, zoneId) => card.Column.ToStatus() == zoneId)"
                   ItemDropped="CardDropped"
                   @ref="_dropContainer"
                   Class="pa-6 d-flex flex-column"
@@ -48,10 +37,10 @@
             {
                 <MudItem xs="12" sm="6" lg="3" Style="display: flex; flex-direction: column;">
                     <MudPaper Elevation="0"
-                              Style="@($"{StyleHelper.GetColumnStyle(column.Id.MapColumnEnumToString())} display: flex; flex-direction: column; flex: 1; border-radius: 16px; border: 1px solid var(--mud-palette-divider); overflow: hidden;")">
+                              Style="@($"{StyleHelper.GetColumnStyle(column.Id)} display: flex; flex-direction: column; flex: 1; border-radius: 16px; border: 1px solid var(--mud-palette-divider); overflow: hidden;")">
 
                         <MudDropZone T="KanbanCard"
-                                     Identifier="@column.Id.MapColumnEnumToString()"
+                                     Identifier="@column.Id.ToStatus()"
                                      AllowReorder="true"
                                      Class="pa-3"
                                      Style="flex: 1; overflow-y: auto; min-height: 200px;" >
@@ -67,7 +56,7 @@
                                           Bordered="true" Overlap="false" />
                             </MudStack>
                             <MudStack Row="true" Spacing="0">
-                                <MudTooltip Text="Add card">
+                                <MudTooltip Text="Karte hinzufügen">
                                     <MudIconButton Icon="@Icons.Material.Filled.AddCircleOutline"
                                                    Size="Size.Small" Color="Color.Inherit"
                                                    OnClick="@(() => AddCard(column))" />
@@ -141,12 +130,19 @@
             <div>
                 <MudDivider Class="mb-2" />
                 <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
-                    <MudTooltip Text="@context.Assignee">
-                        <MudAvatar Size="Size.Small" Color="@context.AvatarColor"
-                                   Style="font-size: 0.65rem; font-weight: 700; width: 24px; height: 24px;">
-                            @context.Assignee.Substring(0, 2).ToUpper()
-                        </MudAvatar>
-                    </MudTooltip>
+                    @if (!string.IsNullOrWhiteSpace(context.Assignee))
+                    {
+                        <MudTooltip Text="@context.Assignee">
+                            <MudAvatar Size="Size.Small" Color="@context.AvatarColor"
+                                       Style="font-size: 0.65rem; font-weight: 700; width: 24px; height: 24px;">
+                                @StyleHelper.GetInitials(context.Assignee)
+                            </MudAvatar>
+                        </MudTooltip>
+                    }
+                    else
+                    {
+                        <MudText Typo="Typo.caption" Color="Color.Secondary">Nicht zugewiesen</MudText>
+                    }
                     <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="1">
                         @if (context.CommentCount > 0)
                         {
@@ -176,16 +172,15 @@
 
 </MudDropContainer>
 
+</RequireAuth>
+
 @code {
 
-    private readonly List<KanbanColumn> _columns = SampleData.Columns;
-    private List<KanbanCard> _allCards = SampleData.Cards;
+    private readonly List<KanbanColumn> _columns = BoardColumns.Create();
+    private readonly List<KanbanCard> _allCards = [];
     private MudDropContainer<KanbanCard>? _dropContainer;
 
-    protected override void OnInitialized()
-    {
-        //_allCards = _columns.SelectMany(c => c.Cards).ToList();
-    }
+    private int OpenCardCount => _allCards.Count(c => c.Column != Column.Done);
 
     private int CardCountFor(Column column) =>
         _allCards.Count(c => c.Column == column);
@@ -194,7 +189,7 @@
     {
         if (dropInfo.Item is null) return;
 
-        dropInfo.Item.Column = dropInfo.DropzoneIdentifier.MapColumnStringToEnum();
+        dropInfo.Item.Column = dropInfo.DropzoneIdentifier.ToColumn();
         _dropContainer?.Refresh();
     }
 

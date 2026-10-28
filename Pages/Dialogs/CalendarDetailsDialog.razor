@@ -1,3 +1,4 @@
+@using Syncro.Layout.Helper
 <MudDialog Options="@(new DialogOptions { MaxWidth = MaxWidth.ExtraSmall, FullWidth = true, CloseButton = true })">
     <TitleContent>
         @if (SelectedEvent != null)
@@ -16,7 +17,7 @@
                 <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
                     <MudIcon Icon="@Icons.Material.Outlined.Schedule" Color="Color.Secondary" Size="Size.Small" />
                     <MudText Typo="Typo.body2">
-                        @SelectedEvent.Start.ToString("dddd, MMMM d · HH:mm") – @SelectedEvent.End.ToString("HH:mm")
+                        @SelectedEvent.Start.ToString("dddd, d. MMMM · HH:mm") – @SelectedEvent.End.ToString("HH:mm")
                     </MudText>
                 </MudStack>
                 @if (!string.IsNullOrEmpty(SelectedEvent.Location))
@@ -38,13 +39,13 @@
                     <MudStack Spacing="1">
                         <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
                             <MudIcon Icon="@Icons.Material.Outlined.Group" Color="Color.Secondary" Size="Size.Small" />
-                            <MudText Typo="Typo.body2" Style="font-weight: 600;">Attendees</MudText>
+                            <MudText Typo="Typo.body2" Style="font-weight: 600;">Teilnehmer</MudText>
                         </MudStack>
                         <MudStack Row="true" Spacing="1" Style="flex-wrap: wrap; padding-left: 28px;">
                             @foreach (var a in SelectedEvent.Attendees)
                             {
                                 <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Primary"
-                                         Avatar="@a.Substring(0,2).ToUpper()"
+                                         Avatar="@StyleHelper.GetInitials(a)"
                                          Style="font-size: 0.72rem; border-radius: 8px;">
                                     @a
                                 </MudChip>
@@ -58,12 +59,12 @@
     <DialogActions>
         <MudButton Color="Color.Error" Variant="Variant.Text" StartIcon="@Icons.Material.Outlined.Delete"
                    OnClick="Submit">
-            Delete
+            Löschen
         </MudButton>
         <MudSpacer />
         <MudButton Color="Color.Primary" Variant="Variant.Filled" Style="border-radius: 8px; font-weight: 700;"
                    OnClick="Cancel">
-            Close
+            Schließen
         </MudButton>
     </DialogActions>
 </MudDialog>

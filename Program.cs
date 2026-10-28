@@ -1,5 +1,7 @@
+using System.Globalization;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
+using Microsoft.JSInterop;
 using MudBlazor.Services;
 using Supabase;
 using Syncro;
@@ -20,15 +22,14 @@ builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.
 var url = builder.Configuration["Supabase:Url"];
 var key = builder.Configuration["Supabase:AnonKey"];
 
-var options = new SupabaseOptions
-{
-    AutoRefreshToken = true,
-    AutoConnectRealtime = true
-};
-
 builder.Services.AddSingleton<Client>(provider =>
     new Client(
-        url!, key, options
+        url!, key, new SupabaseOptions
+        {
+            AutoRefreshToken = true,
+            AutoConnectRealtime = true,
+            SessionHandler = new LocalStorageSessionPersistence((IJSInProcessRuntime)provider.GetRequiredService<IJSRuntime>())
+        }
     )
 );
 builder.Services.AddSingleton<IAuthRepository, AuthRepository>();
@@ -38,4 +39,24 @@ builder.Services.AddSingleton<AppStateService>();
 builder.Services.AddSingleton<IAuthService, AuthService>();
 builder.Services.AddSingleton<IProjectService, ProjectService>();
 
-await builder.Build().RunAsync();
+var culture = new CultureInfo("de-DE");
+CultureInfo.DefaultThreadCurrentCulture = culture;
+CultureInfo.DefaultThreadCurrentUICulture = culture;
+
+var host = builder.Build();
+
+try
+{
+    // Stellt eine gespeicherte Session wieder her und erneuert ggf. das Token
+    await host.Services.GetRequiredService<Client>().InitializeAsync();
+}
+catch (Exception exception)
+{
+    // Kein Console.Error: das würde in Blazor WASM die Fehlerleiste einblenden
+    host.Services.GetRequiredService<ILoggerFactory>().CreateLogger("Syncro.Startup")
+        .LogWarning(exception, "Supabase konnte nicht initialisiert werden");
+}
+
+await host.Services.GetRequiredService<IAuthService>().InitializeAsync();
+
+await host.RunAsync();

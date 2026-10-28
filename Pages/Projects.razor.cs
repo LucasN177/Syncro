@@ -5,9 +5,10 @@ using Syncro.Core.Models.Database;
 
 namespace Syncro.Pages;
 
-public partial class Projects : ComponentBase
+public partial class Projects : ComponentBase, IDisposable
 {
     [Inject] private IProjectService ProjectService { get; set; } = default!;
+    [Inject] private IAuthService AuthService { get; set; } = default!;
     [Inject] private ISnackbar Snackbar { get; set; } = default!;
 
     private readonly List<ProjectDto> _projects = [];
@@ -17,6 +18,20 @@ public partial class Projects : ComponentBase
 
     protected override async Task OnInitializedAsync()
     {
+        AuthService.OnAuthStateChanged += HandleAuthStateChanged;
+        await LoadProjects();
+    }
+
+    private async Task LoadProjects()
+    {
+        _projects.Clear();
+        if (!AuthService.IsAuthenticated)
+        {
+            _isLoading = false;
+            return;
+        }
+
+        _isLoading = true;
         var result = await ProjectService.GetProjects();
         if (result.IsSuccess && result.Data is not null)
             _projects.AddRange(result.Data);
@@ -25,6 +40,14 @@ public partial class Projects : ComponentBase
 
         _isLoading = false;
     }
+
+    private void HandleAuthStateChanged() => InvokeAsync(async () =>
+    {
+        await LoadProjects();
+        StateHasChanged();
+    });
+
+    public void Dispose() => AuthService.OnAuthStateChanged -= HandleAuthStateChanged;
 
     private void CreateProject() => _editingProject = new ProjectDto { Color = "#0f766e" };
 
