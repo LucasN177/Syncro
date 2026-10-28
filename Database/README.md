@@ -12,7 +12,7 @@ bash Database/build-setup-all.sh
 
 | Datei | Inhalt |
 |---|---|
-| `000_function_conflicts.sql` | entfernt gleichnamige Funktionen aus früheren Setups, wenn Rückgabetyp oder Parameternamen abweichen |
+| `000_preflight.sql` | Vorabprüfung bei Resten eines früheren Setups: entfernt abweichende gleichnamige Funktionen und meldet unpassende Tabellen mit allen Abweichungen auf einmal (löscht keine Daten) |
 | `001_profiles.sql` | `profiles` je Auth-Nutzer, wird beim Sign-up per Trigger angelegt |
 | `002_projects.sql` | `projects` mit Key (z. B. `SYN`), Issue-Zähler und Status-Prüfung |
 | `003_project_members.sql` | `project_members` mit Rollen `admin`/`member`/`viewer`, Hilfsfunktionen und alle Projekt-Policies |
