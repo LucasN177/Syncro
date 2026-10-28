@@ -1,0 +1,62 @@
+<MudDialog>
+    <TitleContent>
+        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+            <MudAvatar Size="Size.Small" Style="@($"background: {Project.Color}; color: white; font-weight: 800; font-size: 0.75rem;")">
+                @(string.IsNullOrWhiteSpace(Project.Key) ? "?" : Project.Key[..Math.Min(2, Project.Key.Length)])
+            </MudAvatar>
+            <MudText Typo="Typo.h6" Style="font-weight: 750;">@(IsNew ? "Neues Projekt" : "Projekt bearbeiten")</MudText>
+        </MudStack>
+    </TitleContent>
+    <DialogContent>
+        <MudStack Spacing="3" Class="pt-1">
+            @if (!string.IsNullOrWhiteSpace(_errorMessage))
+            {
+                <MudAlert Severity="Severity.Error" Dense="true" Variant="Variant.Outlined">@_errorMessage</MudAlert>
+            }
+
+            <MudTextField @bind-Value="Project.Name" Label="Projektname" Variant="Variant.Outlined" Required="true"
+                          MaxLength="80" Immediate="true" />
+
+            <MudTextField T="string" Value="Project.Key" ValueChanged="OnKeyChanged" Label="Kürzel"
+                          Variant="Variant.Outlined" MaxLength="10" Immediate="true"
+                          HelperText="@(IsNew ? "Für Issue-Nummern wie SYN-12. Leer lassen, um es aus dem Namen abzuleiten." : "Für Issue-Nummern wie SYN-12. Bestehende Nummern ändern sich mit.")" />
+
+            <MudTextField @bind-Value="Project.Description" Label="Beschreibung" Variant="Variant.Outlined" Lines="3" />
+
+            <MudSelect T="string" @bind-Value="Project.Status" Label="Status" Variant="Variant.Outlined">
+                @foreach (var status in ProjectStatuses)
+                {
+                    <MudSelectItem Value="@status">@status</MudSelectItem>
+                }
+            </MudSelect>
+
+            <div>
+                <MudText Typo="Typo.caption" Color="Color.Secondary">Akzentfarbe</MudText>
+                <MudStack Row="true" Spacing="1" Class="mt-1" Style="flex-wrap: wrap;">
+                    @foreach (var color in Colors)
+                    {
+                        var isSelected = string.Equals(Project.Color, color, StringComparison.OrdinalIgnoreCase);
+                        <button type="button" title="@color" @onclick="@(() => Project.Color = color)"
+                                style="@($"width: 30px; height: 30px; border-radius: 50%; background: {color}; cursor: pointer; border: 3px solid {(isSelected ? "var(--mud-palette-text-primary)" : "transparent")};")">
+                        </button>
+                    }
+                </MudStack>
+            </div>
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        @if (CanDelete && !IsNew)
+        {
+            <MudButton Color="Color.Error" Variant="Variant.Text" StartIcon="@Icons.Material.Outlined.Delete"
+                       Disabled="@_isBusy" OnClick="DeleteAsync">
+                Löschen
+            </MudButton>
+        }
+        <MudSpacer />
+        <MudButton Variant="Variant.Text" OnClick="Cancel">Abbrechen</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@_isBusy" OnClick="SaveAsync"
+                   Style="border-radius: 8px; font-weight: 700;">
+            @(_isBusy ? "Speichert …" : "Speichern")
+        </MudButton>
+    </DialogActions>
+</MudDialog>

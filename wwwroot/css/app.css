@@ -125,3 +125,14 @@ code {
     height: 100%;
 }
 
+
+.project-card,
+.issue-card {
+    transition: box-shadow 0.2s, transform 0.2s;
+}
+
+.project-card:hover,
+.issue-card:hover {
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.12);
+    transform: translateY(-1px);
+}
