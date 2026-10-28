@@ -19,26 +19,43 @@ alter table public.projects add column if not exists key text;
 alter table public.projects add column if not exists issue_counter integer not null default 0;
 alter table public.projects add column if not exists updated_at timestamptz not null default now();
 
--- Kürzel für Issue-Nummern (z. B. SYN-12), aus dem Namen abgeleitet falls nicht gesetzt
+-- Kürzel für Issue-Nummern (z. B. SYN-12), aus dem Namen abgeleitet falls nicht gesetzt.
+-- Liefert immer ein gültiges Kürzel: beginnt mit einem Buchstaben, 2–10 Zeichen.
+--   "Syncro App" → SYN, "123 Test" → P123, "X" → XP, "Ölwechsel" → LWE, "" → PRJ
 create or replace function public.project_key_from_name(p_name text)
 returns text
-language sql
+language plpgsql
 immutable
 as $$
-    select coalesce(
-        nullif(upper(left(regexp_replace(p_name, '[^A-Za-z0-9]', '', 'g'), 3)), ''),
-        'PRJ'
-    );
+declare
+    v_key text = upper(left(regexp_replace(coalesce(p_name, ''), '[^A-Za-z0-9]', '', 'g'), 3));
+begin
+    if v_key = '' then
+        return 'PRJ';
+    end if;
+    if v_key !~ '^[A-Z]' then
+        v_key = 'P' || v_key;
+    end if;
+    if length(v_key) < 2 then
+        v_key = v_key || 'P';
+    end if;
+    return v_key;
+end;
 $$;
 
+-- Bestandsdaten bereinigen, bevor die Prüfregeln greifen
+-- (der frühere Editor erlaubte freie Eingaben für Status und Farbe)
 update public.projects
 set key = public.project_key_from_name(name)
 where key is null or key !~ '^[A-Z][A-Z0-9]{1,9}$';
 
--- Namen, die mit einer Ziffer beginnen, bekommen ein P vorangestellt
 update public.projects
-set key = left('P' || key, 10)
-where key !~ '^[A-Z]';
+set status = 'Aktiv'
+where status is null or status not in ('Aktiv', 'Pausiert', 'Abgeschlossen', 'Archiviert');
+
+update public.projects
+set color = '#0f766e'
+where color is null or color !~ '^#[0-9A-Fa-f]{6}$';
 
 alter table public.projects alter column key set not null;
 
@@ -66,9 +83,6 @@ begin
         new.issue_counter = 0;
         if new.key is null or new.key = '' then
             new.key = public.project_key_from_name(new.name);
-            if new.key !~ '^[A-Z]' then
-                new.key = left('P' || new.key, 10);
-            end if;
         end if;
     else
         new.user_id = old.user_id;

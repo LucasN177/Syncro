@@ -1,6 +1,14 @@
 # Datenbank
 
-Die Migrationen werden im Supabase SQL-Editor **in Reihenfolge** ausgeführt. Jede Datei ist idempotent und kann erneut ausgeführt werden. `002_projects.sql` läuft auch auf einer Datenbank, in der die frühere `projects.sql` bereits angelegt wurde.
+**Am einfachsten:** `setup_all.sql` komplett im Supabase SQL-Editor ausführen. Die Datei enthält alle Migrationen 001–010 in der richtigen Reihenfolge.
+
+Alternativ lassen sich die Einzeldateien **in Reihenfolge** ausführen. Jede Datei ist idempotent und kann erneut ausgeführt werden. `002_projects.sql` läuft auch auf einer Datenbank, in der die frühere `projects.sql` bereits angelegt wurde. Ungültige Altdaten werden dabei bereinigt: Ein zu kurzes Kürzel wird ergänzt, ein unbekannter Status wird zu `Aktiv` und eine ungültige Farbe zu `#0f766e`.
+
+`setup_all.sql` wird aus den Einzeldateien erzeugt und nicht von Hand bearbeitet. Nach Änderungen an einer Migration neu generieren:
+
+```bash
+bash Database/build-setup-all.sh
+```
 
 | Datei | Inhalt |
 |---|---|
@@ -47,7 +55,8 @@ Um Nutzer einzuladen, sucht `rpc('find_profile_by_email', { p_email })` das pass
 
 `Database/tests/run-tests.sh` startet ein Postgres in Docker, baut die Supabase-Umgebung minimal nach (`supabase_stub.sql`) und prüft:
 
-- das Upgrade einer Datenbank mit der alten `projects.sql`,
+- dass `setup_all.sql` zu den Einzeldateien passt,
+- das Upgrade einer Datenbank mit der alten `projects.sql` und unsauberen Altdaten, über die Einzeldateien und über `setup_all.sql`,
 - dass alle Migrationen zweimal hintereinander fehlerfrei laufen,
 - die Rechte und Trigger mit vier Testnutzern (`01_core.sql`, `02_attachments_notifications.sql`).
 

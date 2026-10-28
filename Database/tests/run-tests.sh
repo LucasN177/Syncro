@@ -7,10 +7,32 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 CONTAINER="syncro-sql-tests"
 IMAGE="${POSTGRES_IMAGE:-postgres:17}"
+failed=0
 
 psql_db() {
     docker exec -i "$CONTAINER" psql -U postgres -d "$1" -v ON_ERROR_STOP=1 -q "${@:2}"
 }
+
+check() {
+    local description="$1" actual="$2" expected="$3"
+    if [[ "$actual" == "$expected" ]]; then
+        echo "ok: $description"
+    else
+        echo "FAILED: $description (erwartet: $expected, erhalten: $actual)"
+        failed=1
+    fi
+}
+
+echo "== setup_all.sql ist aktuell"
+generated=$(mktemp)
+bash build-setup-all.sh "$generated" >/dev/null
+if diff -q --strip-trailing-cr "$generated" setup_all.sql >/dev/null; then
+    echo "ok: setup_all.sql entspricht den Einzeldateien"
+else
+    echo "FAILED: setup_all.sql ist veraltet – bash Database/build-setup-all.sh ausführen"
+    failed=1
+fi
+rm -f "$generated"
 
 cleanup() { docker rm -f "$CONTAINER" >/dev/null 2>&1 || true; }
 trap cleanup EXIT
@@ -23,49 +45,81 @@ until docker logs "$CONTAINER" 2>&1 | grep -q "PostgreSQL init process complete"
     sleep 1
 done
 
-# Neue Datenbank mit Stub; alle Migrationen laufen zweimal, um die Idempotenz zu prüfen.
-# Bricht das Skript ab, wenn eine Migration fehlschlägt.
+run_sql_file() {
+    local db="$1" file="$2"
+    psql_db "$db" -c "set client_min_messages = warning" -f - < "$file" \
+        || { echo "FAILED: $file"; exit 1; }
+}
+
+# Neue Datenbank mit Stub. Modus "single" führt 001–010 einzeln aus, "all" das Gesamtskript;
+# beides jeweils zweimal, um die Idempotenz zu prüfen. "legacy" legt vorher die alte projects.sql
+# mit Daten an, wie sie der frühere Freitext-Editor erlaubte.
 prepare_db() {
-    local db="$1" legacy="${2:-}"
+    local db="$1" mode="$2" legacy="${3:-}"
     docker exec "$CONTAINER" psql -U postgres -q -c "create database $db" >/dev/null
     psql_db "$db" < tests/supabase_stub.sql
     if [[ -n "$legacy" ]]; then
         psql_db "$db" < tests/legacy_projects.sql
-        psql_db "$db" -c "insert into auth.users values ('11111111-1111-1111-1111-111111111111','alt@example.test');
-                          insert into projects(id,user_id,name) values (gen_random_uuid(),'11111111-1111-1111-1111-111111111111','123 Altprojekt');"
+        psql_db "$db" -c "
+            insert into auth.users values ('11111111-1111-1111-1111-111111111111','alt@example.test');
+            insert into projects(id, user_id, name, status, color) values
+                (gen_random_uuid(), '11111111-1111-1111-1111-111111111111', '123 Altprojekt', 'Aktiv', '#0f766e'),
+                (gen_random_uuid(), '11111111-1111-1111-1111-111111111111', 'X', 'Aktiv', '#0f766e'),
+                (gen_random_uuid(), '11111111-1111-1111-1111-111111111111', 'Ölwechsel', 'Active', 'teal'),
+                (gen_random_uuid(), '11111111-1111-1111-1111-111111111111', 'Web', 'Pausiert', '#fff');"
     fi
     for run in 1 2; do
-        for migration in 0*.sql; do
-            psql_db "$db" -c "set client_min_messages = warning" -f - < "$migration" \
-                || { echo "FAILED: $migration (Durchlauf $run)"; exit 1; }
-        done
+        if [[ "$mode" == "all" ]]; then
+            run_sql_file "$db" setup_all.sql
+        else
+            for migration in 0*.sql; do
+                run_sql_file "$db" "$migration"
+            done
+        fi
     done
 }
 
-failed=0
+check_upgrade() {
+    local db="$1"
+    check "Kürzel aus Altdaten" \
+        "$(psql_db "$db" -tAc "select string_agg(key || '=' || name, ',' order by key) from projects")" \
+        "LWE=Ölwechsel,P123=123 Altprojekt,WEB=Web,XP=X"
+    check "Ungültiger Status wird Aktiv, gültiger bleibt" \
+        "$(psql_db "$db" -tAc "select string_agg(status || '=' || key, ',' order by key) from projects where key in ('LWE','WEB')")" \
+        "Aktiv=LWE,Pausiert=WEB"
+    check "Ungültige Farben werden ersetzt" \
+        "$(psql_db "$db" -tAc "select count(*) from projects where color = '#0f766e'")" "4"
+    check "Eigentümer ist admin in allen Altprojekten" \
+        "$(psql_db "$db" -tAc "select count(*) from project_members where role = 'admin'")" "4"
+}
 
-echo "== Upgrade von projects.sql"
-prepare_db t_upgrade legacy
-key=$(psql_db t_upgrade -tAc "select key from projects where name = '123 Altprojekt'")
-admins=$(psql_db t_upgrade -tAc "select count(*) from project_members where role = 'admin'")
-if [[ "$key" == "P123" && "$admins" == "1" ]]; then
-    echo "ok: bestehendes Projekt bekommt Kürzel P123 und den Eigentümer als admin"
-else
-    echo "FAILED: Upgrade (key=$key, admins=$admins)"
-    failed=1
-fi
+echo "== Upgrade von projects.sql (Einzeldateien)"
+prepare_db t_upgrade_single single legacy
+check_upgrade t_upgrade_single
 
-for test in tests/0*.sql; do
-    name="t_$(basename "$test" .sql)"
-    echo "== $(basename "$test")"
-    prepare_db "$name"
+echo "== Upgrade von projects.sql (setup_all.sql)"
+prepare_db t_upgrade_all all legacy
+check_upgrade t_upgrade_all
 
-    status=0
+run_test() {
+    local test="$1" mode="$2"
+    local name="t_${mode}_$(basename "$test" .sql)"
+    echo "== $(basename "$test") ($mode)"
+    prepare_db "$name" "$mode"
+
+    local status=0 output
     output=$(psql_db "$name" < "$test" 2>&1) || status=$?
     echo "$output" | grep -E "ok:|FAILED|ERROR" | sed 's/^.*NOTICE:  //' || true
     if [[ $status -ne 0 ]]; then
         failed=1
     fi
+}
+
+for test in tests/0*.sql; do
+    run_test "$test" single
+done
+for test in tests/0*.sql; do
+    run_test "$test" all
 done
 
 if [[ $failed -eq 0 ]]; then
