@@ -94,6 +94,37 @@ public class AuthRepository(Supabase.Client client): IAuthRepository
         }
     }
 
+    public async Task<IResponse> SendPasswordReset(string email, string redirectTo)
+    {
+        try
+        {
+            var sent = await client.Auth.ResetPasswordForEmail(new ResetPasswordForEmailOptions(email.Trim())
+            {
+                RedirectTo = redirectTo
+            });
+            return sent is not null ? Response.Success() : Response.Failure("Die Mail konnte nicht gesendet werden.", null);
+        }
+        catch (Exception exception)
+        {
+            return Response.Failure(exception.Message, exception);
+        }
+    }
+
+    public async Task<IResponse<Session>> RecoverSessionFromUrl(Uri url)
+    {
+        try
+        {
+            var session = await client.Auth.GetSessionFromUrl(url);
+            return session is not null
+                ? Response<Session>.Success(session)
+                : Response<Session>.Failure("Der Link ist ungültig.");
+        }
+        catch (Exception exception)
+        {
+            return Response<Session>.Failure(exception.Message);
+        }
+    }
+
     public async Task<IResponse<ProfileDto>> GetProfile(Guid id)
     {
         try

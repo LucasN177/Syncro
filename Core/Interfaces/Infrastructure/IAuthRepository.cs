@@ -25,6 +25,12 @@ public interface IAuthRepository
 
     public Task<IResponse> UpdatePassword(string password);
 
+    /// <summary>Schickt eine Mail mit Link zum Zurücksetzen; der Link führt auf redirectTo.</summary>
+    public Task<IResponse> SendPasswordReset(string email, string redirectTo);
+
+    /// <summary>Übernimmt die Session aus dem Link der Reset-Mail (Tokens im URL-Fragment).</summary>
+    public Task<IResponse<Session>> RecoverSessionFromUrl(Uri url);
+
     public Task<IResponse<ProfileDto>> GetProfile(Guid id);
 
     public Task<IResponse<ProfileDto>> UpdateProfile(ProfileDto profile);

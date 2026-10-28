@@ -108,6 +108,24 @@ public class AuthService : IAuthService
 
     public Task<IResponse> UpdatePassword(string password) => _authRepository.UpdatePassword(password);
 
+    public async Task<IResponse> SendPasswordReset(string email, string appBaseUri)
+    {
+        if (string.IsNullOrWhiteSpace(email))
+            return Response.Failure("Bitte gib deine E-Mail-Adresse ein.", null);
+
+        return await _authRepository.SendPasswordReset(email, $"{appBaseUri.TrimEnd('/')}/reset-password");
+    }
+
+    public async Task<IResponse> RecoverSessionFromUrl(Uri url)
+    {
+        var result = await _authRepository.RecoverSessionFromUrl(url);
+        if (!result.IsSuccess)
+            return Response.Failure(result.ErrorMessage, result.Exception);
+
+        await InitializeAsync();
+        return Response.Success();
+    }
+
     public async Task<IResponse<ProfileDto>> UpdateProfile(ProfileDto profile)
     {
         var result = await _authRepository.UpdateProfile(profile);

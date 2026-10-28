@@ -1,5 +1,22 @@
 ﻿@page "/not-found"
 @layout MainLayout
 
-<h3>Not Found</h3>
-<p>Sorry, the content you are looking for does not exist.</p>
+<PageTitle>Seite nicht gefunden · Syncro</PageTitle>
+
+<MudPaper Elevation="0" Class="pa-10 mx-auto" Style="max-width: 560px; margin-top: 70px; border-radius: 16px; border: 1px dashed var(--mud-palette-divider); text-align: center; background: var(--mud-palette-surface);">
+    <MudText Style="font-size: 4rem; font-weight: 800; letter-spacing: -2px; line-height: 1; color: var(--mud-palette-primary);">404</MudText>
+    <MudText Typo="Typo.h5" Style="font-weight: 800;" Class="mt-2">Seite nicht gefunden</MudText>
+    <MudText Typo="Typo.body2" Color="Color.Secondary" Class="mt-1 mb-6">
+        Die Seite existiert nicht oder wurde verschoben. Prüfe den Link oder geh zurück zum Dashboard.
+    </MudText>
+    <MudStack Row="true" Justify="Justify.Center" Spacing="2">
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" Href="" StartIcon="@Icons.Material.Filled.Dashboard"
+                   Style="border-radius: 10px; font-weight: 700;">
+            Zum Dashboard
+        </MudButton>
+        <MudButton Variant="Variant.Outlined" Color="Color.Primary" Href="projects" StartIcon="@Icons.Material.Filled.Folder"
+                   Style="border-radius: 10px; font-weight: 700;">
+            Projekte
+        </MudButton>
+    </MudStack>
+</MudPaper>

@@ -37,5 +37,11 @@ public interface IAuthService
 
     public Task<IResponse> UpdatePassword(string password);
 
+    /// <summary>Schickt eine Mail mit Link auf die Seite reset-password.</summary>
+    public Task<IResponse> SendPasswordReset(string email, string appBaseUri);
+
+    /// <summary>Meldet den Nutzer über den Link aus der Reset-Mail an.</summary>
+    public Task<IResponse> RecoverSessionFromUrl(Uri url);
+
     public Task<IResponse<ProfileDto>> UpdateProfile(ProfileDto profile);
 }

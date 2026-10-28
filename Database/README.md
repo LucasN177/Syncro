@@ -42,3 +42,17 @@ Diese Felder setzt die Datenbank selbst. Werte, die der Client mitschickt, werde
 `issues.number`, `issues.created_by`, `issues.comment_count`, `projects.issue_counter`, `projects.user_id` (bei Updates), `events.owner_id`, `issue_comments.user_id`.
 
 Um Nutzer einzuladen, sucht `rpc('find_profile_by_email', { p_email })` das passende Profil.
+
+## Tests
+
+`Database/tests/run-tests.sh` startet ein Postgres in Docker, baut die Supabase-Umgebung minimal nach (`supabase_stub.sql`) und prüft:
+
+- das Upgrade einer Datenbank mit der alten `projects.sql`,
+- dass alle Migrationen zweimal hintereinander fehlerfrei laufen,
+- die Rechte und Trigger mit vier Testnutzern (`01_core.sql`, `02_attachments_notifications.sql`).
+
+```bash
+bash Database/tests/run-tests.sh
+```
+
+Der Stub ersetzt nur Auth, Storage-Tabellen und die Realtime-Publikation. Ob Supabase Realtime und Storage selbst wie erwartet arbeiten, zeigt erst ein Test im echten Projekt.
