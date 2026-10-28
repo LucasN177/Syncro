@@ -1,3 +1,4 @@
+using Newtonsoft.Json;
 using Supabase.Postgrest.Attributes;
 using Supabase.Postgrest.Models;
 
@@ -10,6 +11,7 @@ public class ProjectDto : BaseModel
     [Column("id")]
     public Guid Id { get; set; }
 
+    /// <summary>Eigentümer des Projekts. Wird bei Updates von der Datenbank geschützt.</summary>
     [Column("user_id")]
     public string UserId { get; set; } = string.Empty;
 
@@ -25,6 +27,16 @@ public class ProjectDto : BaseModel
     [Column("color")]
     public string Color { get; set; } = "#0f766e";
 
-    [Column("created_at")]
+    /// <summary>Kürzel für Issue-Nummern, z. B. SYN. Leer lassen, um es aus dem Namen abzuleiten.</summary>
+    [Column("key", NullValueHandling.Ignore)]
+    public string? Key { get; set; }
+
+    [Column("issue_counter", ignoreOnInsert: true, ignoreOnUpdate: true)]
+    public int IssueCounter { get; set; }
+
+    [Column("created_at", ignoreOnUpdate: true)]
     public DateTime CreatedAt { get; set; }
+
+    [Column("updated_at", ignoreOnInsert: true, ignoreOnUpdate: true)]
+    public DateTime UpdatedAt { get; set; }
 }

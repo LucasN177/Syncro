@@ -1,8 +1,10 @@
 name: Deploy Blazor WASM to GitHub Pages
 
 on:
+  # Nur main deployen; die Umgebung github-pages erlaubt keine anderen Branches
   push:
-    branches:
+    branches: [ main ]
+  workflow_dispatch:
 
 permissions:
   contents: read

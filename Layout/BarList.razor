@@ -1,0 +1,28 @@
+@using Syncro.Layout.UI_Models
+
+@* Horizontale Balken relativ zum größten Wert *@
+<MudStack Spacing="2">
+    @foreach (var item in Items)
+    {
+        <div>
+            <MudStack Row="true" Justify="Justify.SpaceBetween">
+                <MudText Typo="Typo.body2" Style="font-weight: 600;">@item.Label</MudText>
+                <MudText Typo="Typo.body2" Style="font-weight: 700;">@item.Count</MudText>
+            </MudStack>
+            <div style="height: 8px; border-radius: 4px; background: var(--mud-palette-lines-default); overflow: hidden; margin-top: 4px;">
+                <div style="@($"height: 100%; width: {Width(item)}%; background: {item.Hex}; border-radius: 4px;")"></div>
+            </div>
+        </div>
+    }
+</MudStack>
+
+@code {
+    [Parameter] public IReadOnlyList<BarItem> Items { get; set; } = [];
+
+    private string Width(BarItem item)
+    {
+        var max = Items.Count == 0 ? 0 : Items.Max(i => i.Count);
+        var width = max == 0 ? 0 : item.Count * 100.0 / max;
+        return width.ToString("F1", System.Globalization.CultureInfo.InvariantCulture);
+    }
+}

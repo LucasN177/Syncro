@@ -1,0 +1,2 @@
+# Shell-Skripte müssen auch unter Windows LF behalten, sonst bricht bash ab
+*.sh text eol=lf

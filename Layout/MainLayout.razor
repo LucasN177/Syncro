@@ -1,7 +1,9 @@
 ﻿@using Syncro.Core.Interfaces.Services
 @using Syncro.Services
 @using Syncro.Pages.Dialogs
+@using Syncro.Layout.Helper
 @inherits LayoutComponentBase
+@implements IDisposable
 @inject NavigationManager NavigationManager
 @inject AppStateService AppStateService
 @inject IAuthService AuthService
@@ -38,9 +40,10 @@
         
         <MudSpacer />
 
-        @if (AuthService.CurrentUser is not null)
+        @if (AuthService.IsAuthenticated)
         {
-            <MudTooltip Text="@AuthService.CurrentUser.Email">
+            <NotificationBell />
+            <MudTooltip Text="@AuthService.DisplayName">
                 <MudAvatar Size="Size.Small" Color="Color.Primary" Class="mr-2" Style="font-size: 0.7rem; font-weight: 800;">
                     @UserInitials
                 </MudAvatar>
@@ -97,32 +100,27 @@
 
 @code
 {
-    private string UserInitials
+    private string UserInitials => StyleHelper.GetInitials(AuthService.DisplayName);
+
+    protected override void OnInitialized()
     {
-        get
-        {
-            var email = AuthService.CurrentUser?.Email ?? "?";
-            return string.Concat(email.Split('@')[0].Split('.', StringSplitOptions.RemoveEmptyEntries)
-                .Take(2)
-                .Select(part => char.ToUpperInvariant(part[0])));
-        }
+        AuthService.OnAuthStateChanged += HandleStateChanged;
+        // Dark Mode kann auch auf der Einstellungsseite umgeschaltet werden
+        AppStateService.OnChange += HandleStateChanged;
     }
 
-    protected override async Task OnInitializedAsync()
+    private void HandleStateChanged() => InvokeAsync(StateHasChanged);
+
+    public void Dispose()
     {
-        var session = await AuthService.GetCurrentSession();
-        if (session.IsSuccess)
-            await AuthService.GetCurrentUser();
+        AuthService.OnAuthStateChanged -= HandleStateChanged;
+        AppStateService.OnChange -= HandleStateChanged;
     }
 
     private async Task OpenLoginAsync()
     {
         var options = new DialogOptions { MaxWidth = MaxWidth.ExtraSmall, FullWidth = true, CloseButton = true, CloseOnEscapeKey = true };
-        var dialog = await DialogService.ShowAsync<AuthDialog>("Anmelden", options);
-        await dialog.Result;
-        await AuthService.GetCurrentSession();
-        await AuthService.GetCurrentUser();
-        await InvokeAsync(StateHasChanged);
+        await DialogService.ShowAsync<AuthDialog>("Anmelden", options);
     }
 
     private async Task LogoutAsync()

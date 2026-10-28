@@ -1,0 +1,72 @@
+@using Syncro.Core.Mapping
+@using Syncro.Layout.Helper
+
+<MudMenu AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" PopoverClass="notification-popover"
+         MaxHeight="480" LockScroll="false">
+    <ActivatorContent>
+        <MudBadge Content="@BadgeCount" Visible="@(BadgeCount > 0)" Color="Color.Error" Overlap="true" Max="99" Class="mr-1">
+            <MudIconButton Icon="@(UnreadCount > 0 ? Icons.Material.Filled.Notifications : Icons.Material.Outlined.Notifications)"
+                           Color="Color.Inherit" aria-label="Benachrichtigungen" />
+        </MudBadge>
+    </ActivatorContent>
+    <ChildContent>
+        <div class="pa-3">
+            <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-2">
+                <MudText Typo="Typo.subtitle1" Style="font-weight: 700;">Benachrichtigungen</MudText>
+                @if (UnreadCount > 0)
+                {
+                    <MudButton Size="Size.Small" Variant="Variant.Text" Color="Color.Primary" OnClick="MarkAllAsRead">
+                        Alle gelesen
+                    </MudButton>
+                }
+            </MudStack>
+
+            @if (_dueSoon.Any())
+            {
+                <MudText Typo="Typo.caption" Color="Color.Secondary" Style="font-weight: 700;">BALD FÄLLIG</MudText>
+                @foreach (var issue in _dueSoon)
+                {
+                    var isOverdue = issue.DueDate!.Value.Date < DateTime.Today;
+                    <div class="notification-item pa-2" @onclick="@(() => OpenProject(issue.ProjectId))"
+                         style="cursor: pointer; border-radius: 8px;">
+                        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                            <MudIcon Icon="@Icons.Material.Outlined.Event" Size="Size.Small" Color="@(isOverdue ? Color.Error : Color.Warning)" />
+                            <MudStack Spacing="0" Style="min-width: 0;">
+                                <MudText Typo="Typo.body2" Style="font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                    @issue.ToIssueKey(_projectKeys.GetValueOrDefault(issue.ProjectId)) @issue.Title
+                                </MudText>
+                                <MudText Typo="Typo.caption" Color="@(isOverdue ? Color.Error : Color.Secondary)">
+                                    @DueText(issue.DueDate.Value)
+                                </MudText>
+                            </MudStack>
+                        </MudStack>
+                    </div>
+                }
+                <MudDivider Class="my-2" />
+            }
+
+            @if (!_notifications.Any())
+            {
+                <MudText Typo="Typo.body2" Color="Color.Secondary" Class="py-4" Align="Align.Center">
+                    Keine Benachrichtigungen.
+                </MudText>
+            }
+            @foreach (var notification in _notifications)
+            {
+                <div class="notification-item pa-2" @onclick="@(() => OpenNotification(notification))"
+                     style="@($"cursor: pointer; border-radius: 8px; {(notification.IsRead ? string.Empty : "background: var(--mud-palette-action-default-hover);")}")">
+                    <MudStack Row="true" AlignItems="AlignItems.Start" Spacing="2">
+                        <MudIcon Icon="@NotificationIcon(notification.Type)" Size="Size.Small"
+                                 Color="@(notification.IsRead ? Color.Secondary : Color.Primary)" Style="margin-top: 2px;" />
+                        <MudStack Spacing="0" Style="flex: 1; min-width: 0;">
+                            <MudText Typo="Typo.body2" Style="@(notification.IsRead ? string.Empty : "font-weight: 700;")">
+                                @notification.Message
+                            </MudText>
+                            <MudText Typo="Typo.caption" Color="Color.Secondary">@TimeHelper.Relative(notification.CreatedAt)</MudText>
+                        </MudStack>
+                    </MudStack>
+                </div>
+            }
+        </div>
+    </ChildContent>
+</MudMenu>

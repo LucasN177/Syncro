@@ -1,22 +1,31 @@
-<MudDialog Options="@(new DialogOptions { MaxWidth = MaxWidth.ExtraSmall, FullWidth = true, CloseButton = true })">
+@using Syncro.Core.Constants
+
+<MudDialog>
     <TitleContent>
-        @if (SelectedEvent != null)
-        {
-            var cat = Categories.FirstOrDefault(c => c.Name == SelectedEvent.Category);
-            <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
-                <MudIcon Icon="@Icons.Material.Filled.Circle" Style="@($"color: {cat?.Hex}; font-size: 14px;")" />
-                <MudText Typo="Typo.h6" Style="font-weight: 700;">@SelectedEvent.Title</MudText>
-            </MudStack>
+        @{
+            var cat = Categories?.FirstOrDefault(c => c.Name == SelectedEvent?.Category);
         }
+        <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+            <MudIcon Icon="@Icons.Material.Filled.Circle" Style="@($"color: {cat?.Hex}; font-size: 14px;")" />
+            <MudText Typo="Typo.h6" Style="font-weight: 700;">@SelectedEvent?.Title</MudText>
+        </MudStack>
     </TitleContent>
     <DialogContent>
         @if (SelectedEvent != null)
         {
             <MudStack Spacing="3">
+                @if (!string.IsNullOrWhiteSpace(_errorMessage))
+                {
+                    <MudAlert Severity="Severity.Error" Dense="true" Variant="Variant.Outlined">@_errorMessage</MudAlert>
+                }
                 <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
                     <MudIcon Icon="@Icons.Material.Outlined.Schedule" Color="Color.Secondary" Size="Size.Small" />
+                    <MudText Typo="Typo.body2">@TimeText</MudText>
+                </MudStack>
+                <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
+                    <MudIcon Icon="@Icons.Material.Outlined.Label" Color="Color.Secondary" Size="Size.Small" />
                     <MudText Typo="Typo.body2">
-                        @SelectedEvent.Start.ToString("dddd, MMMM d · HH:mm") – @SelectedEvent.End.ToString("HH:mm")
+                        @CalendarCategories.DisplayName(SelectedEvent.Category) · @(ProjectName ?? "Privat")
                     </MudText>
                 </MudStack>
                 @if (!string.IsNullOrEmpty(SelectedEvent.Location))
@@ -30,7 +39,7 @@
                 {
                     <MudStack Row="true" Spacing="2">
                         <MudIcon Icon="@Icons.Material.Outlined.Notes" Color="Color.Secondary" Size="Size.Small" />
-                        <MudText Typo="Typo.body2" Color="Color.Secondary">@SelectedEvent.Description</MudText>
+                        <MudText Typo="Typo.body2" Color="Color.Secondary" Style="white-space: pre-wrap;">@SelectedEvent.Description</MudText>
                     </MudStack>
                 }
                 @if (SelectedEvent.Attendees.Any())
@@ -38,13 +47,13 @@
                     <MudStack Spacing="1">
                         <MudStack Row="true" AlignItems="AlignItems.Center" Spacing="2">
                             <MudIcon Icon="@Icons.Material.Outlined.Group" Color="Color.Secondary" Size="Size.Small" />
-                            <MudText Typo="Typo.body2" Style="font-weight: 600;">Attendees</MudText>
+                            <MudText Typo="Typo.body2" Style="font-weight: 600;">Teilnehmer</MudText>
                         </MudStack>
                         <MudStack Row="true" Spacing="1" Style="flex-wrap: wrap; padding-left: 28px;">
                             @foreach (var a in SelectedEvent.Attendees)
                             {
                                 <MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Primary"
-                                         Avatar="@a.Substring(0,2).ToUpper()"
+                                         Icon="@Icons.Material.Outlined.Person"
                                          Style="font-size: 0.72rem; border-radius: 8px;">
                                     @a
                                 </MudChip>
@@ -56,14 +65,28 @@
         }
     </DialogContent>
     <DialogActions>
-        <MudButton Color="Color.Error" Variant="Variant.Text" StartIcon="@Icons.Material.Outlined.Delete"
-                   OnClick="Submit">
-            Delete
-        </MudButton>
+        @if (SelectedEvent?.IssueId is not null)
+        {
+            <MudButton Color="Color.Primary" Variant="Variant.Text" StartIcon="@Icons.Material.Filled.ViewKanban"
+                       OnClick="OpenBoard">
+                Zum Board
+            </MudButton>
+        }
+        else if (CanEdit)
+        {
+            <MudButton Color="Color.Error" Variant="Variant.Text" StartIcon="@Icons.Material.Outlined.Delete"
+                       Disabled="@_isBusy" OnClick="DeleteAsync">
+                Löschen
+            </MudButton>
+            <MudButton Color="Color.Primary" Variant="Variant.Text" StartIcon="@Icons.Material.Outlined.Edit"
+                       OnClick="Edit">
+                Bearbeiten
+            </MudButton>
+        }
         <MudSpacer />
         <MudButton Color="Color.Primary" Variant="Variant.Filled" Style="border-radius: 8px; font-weight: 700;"
                    OnClick="Cancel">
-            Close
+            Schließen
         </MudButton>
     </DialogActions>
 </MudDialog>

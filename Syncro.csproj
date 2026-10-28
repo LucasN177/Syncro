@@ -6,6 +6,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <OverrideHtmlAssetPlaceholders>true</OverrideHtmlAssetPlaceholders>
     <ServiceWorkerAssetsManifest>service-worker-assets.js</ServiceWorkerAssetsManifest>
+    <!-- Deutsche Datums- und Zahlenformate (CultureInfo de-DE in Program.cs) -->
+    <BlazorWebAssemblyLoadAllGlobalizationData>true</BlazorWebAssemblyLoadAllGlobalizationData>
   </PropertyGroup>
 
   <ItemGroup>
@@ -20,7 +22,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Core\Interfaces\Models\" />
   </ItemGroup>
 
 </Project>

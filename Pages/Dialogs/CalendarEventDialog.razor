@@ -1,0 +1,79 @@
+@using Syncro.Core.Constants
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6" Style="font-weight: 700;">@(IsNew ? "Neuer Termin" : "Termin bearbeiten")</MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudStack Spacing="3" Class="pt-1">
+            @if (!string.IsNullOrWhiteSpace(_errorMessage))
+            {
+                <MudAlert Severity="Severity.Error" Dense="true" Variant="Variant.Outlined">@_errorMessage</MudAlert>
+            }
+
+            <MudTextField @bind-Value="Event.Title" Label="Titel" Variant="Variant.Outlined" Required="true"
+                          Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Outlined.Title" />
+            <MudTextField @bind-Value="Event.Description" Label="Beschreibung" Variant="Variant.Outlined"
+                          Lines="2" Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Outlined.Notes" />
+            <MudTextField @bind-Value="Event.Location" Label="Ort" Variant="Variant.Outlined"
+                          Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Outlined.LocationOn" />
+
+            <MudGrid Spacing="2">
+                <MudItem xs="6">
+                    <MudDatePicker @bind-Date="_startDate" Label="Startdatum" Variant="Variant.Outlined" DateFormat="dd.MM.yyyy" />
+                </MudItem>
+                <MudItem xs="6">
+                    <MudTimePicker @bind-Time="_startTime" Label="Startzeit" Variant="Variant.Outlined" />
+                </MudItem>
+                <MudItem xs="6">
+                    <MudDatePicker @bind-Date="_endDate" Label="Enddatum" Variant="Variant.Outlined" DateFormat="dd.MM.yyyy" />
+                </MudItem>
+                <MudItem xs="6">
+                    <MudTimePicker @bind-Time="_endTime" Label="Endzeit" Variant="Variant.Outlined" />
+                </MudItem>
+            </MudGrid>
+
+            <MudGrid Spacing="2">
+                <MudItem xs="12" sm="6">
+                    <MudSelect T="string" @bind-Value="Event.Category" Label="Kategorie" Variant="Variant.Outlined"
+                               Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Outlined.Label">
+                        @foreach (var category in CalendarCategories.Create())
+                        {
+                            <MudSelectItem Value="@category.Name">@CalendarCategories.DisplayName(category.Name)</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+                <MudItem xs="12" sm="6">
+                    <MudSelect T="Guid?" Value="Event.ProjectId" ValueChanged="OnProjectChanged" Label="Sichtbar für"
+                               Variant="Variant.Outlined" ToStringFunc="@ProjectName"
+                               Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Outlined.Folder">
+                        <MudSelectItem Value="@((Guid?)null)">Nur mich und Teilnehmer</MudSelectItem>
+                        @foreach (var project in Projects)
+                        {
+                            <MudSelectItem Value="@((Guid?)project.Id)">@project.Name</MudSelectItem>
+                        }
+                    </MudSelect>
+                </MudItem>
+            </MudGrid>
+
+            <MudSelect T="Guid" MultiSelection="true" @bind-SelectedValues="_attendees" Label="Teilnehmer"
+                       Variant="Variant.Outlined" ToStringFunc="@PersonName"
+                       HelperText="@(AttendeeOptions.Any() ? "Personen aus deinen Projekten" : "Lade Personen in ein Projekt ein, um sie hier auszuwählen.")"
+                       Adornment="Adornment.Start" AdornmentIcon="@Icons.Material.Outlined.Group">
+                @foreach (var person in AttendeeOptions)
+                {
+                    <MudSelectItem Value="@person.UserId">@person.DisplayName</MudSelectItem>
+                }
+            </MudSelect>
+        </MudStack>
+    </DialogContent>
+    <DialogActions>
+        <MudButton Variant="Variant.Text" OnClick="Cancel">Abbrechen</MudButton>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" Disabled="@_isBusy"
+                   Style="border-radius: 8px; font-weight: 700;"
+                   StartIcon="@Icons.Material.Filled.Save"
+                   OnClick="SaveAsync">
+            @(_isBusy ? "Speichert …" : "Speichern")
+        </MudButton>
+    </DialogActions>
+</MudDialog>

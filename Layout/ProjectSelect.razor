@@ -1,0 +1,29 @@
+@using Syncro.Core.Models.Database
+
+@* Projektauswahl für Seitenköpfe; Guid.Empty steht für "Alle Projekte", wenn AllowAll gesetzt ist *@
+<MudSelect T="Guid" Value="Value" ValueChanged="ValueChanged" Variant="Variant.Outlined" Dense="true"
+           Margin="Margin.Dense" Style="min-width: 220px;" ToStringFunc="@ProjectName">
+    @if (AllowAll)
+    {
+        <MudSelectItem Value="@Guid.Empty">Alle Projekte</MudSelectItem>
+    }
+    @foreach (var project in Projects.Where(project => project.Status != "Archiviert" || project.Id == Value))
+    {
+        <MudSelectItem Value="@project.Id">@project.Name</MudSelectItem>
+    }
+</MudSelect>
+
+@code {
+    [Parameter] public IReadOnlyList<ProjectDto> Projects { get; set; } = [];
+
+    [Parameter] public Guid Value { get; set; }
+
+    [Parameter] public EventCallback<Guid> ValueChanged { get; set; }
+
+    [Parameter] public bool AllowAll { get; set; }
+
+    private string ProjectName(Guid projectId) =>
+        projectId == Guid.Empty
+            ? "Alle Projekte"
+            : Projects.FirstOrDefault(project => project.Id == projectId)?.Name ?? string.Empty;
+}
