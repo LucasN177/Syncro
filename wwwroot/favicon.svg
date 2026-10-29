@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="syncro-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0f766e"/>
+      <stop offset="1" stop-color="#2563eb"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="url(#syncro-bg)"/>
+  <!-- Zwei Pfeile im Kreis: Synchronisation -->
+  <g fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round">
+    <path d="M16.96 26.53 A16 16 0 0 1 45.86 24"/>
+    <path d="M47.04 37.47 A16 16 0 0 1 18.14 40"/>
+  </g>
+  <g fill="#fff">
+    <polygon points="49.86,30.93 51.49,20.75 40.23,27.25"/>
+    <polygon points="14.14,33.07 12.51,43.25 23.77,36.75"/>
+  </g>
+</svg>
